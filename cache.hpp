@@ -1,18 +1,34 @@
 class Cache {
-public:
-    Cache(int size, int blockSize) : size(size), blockSize(blockSize) {
-        numBlocks = size / blockSize;
-        cacheData.resize(numBlocks);
-        for (int i = 0; i < numBlocks; ++i) {
-            cacheData[i].resize(blockSize);
-        }
-    }
+    void initializeCache();
 
-    void read(int address) {
-        // Implement read logic
-    }
+    public:
+        int misses;
+        int evictions;
+        int write_backs;
+        int no_of_sets;
+        int no_of_blocks;
+        int block_size;
+        
+        Cache(int, int, int);
+        bool read(int mem_addr);
+        bool write(int mem_addr);
+        vector<Set> cache;
+};
 
-    void write(int address, int data) {
-        // Implement write logic
-    }
-}
+enum State {
+    INVALID,
+    EXCLUSIVE,
+    MODIFIED,
+    SHARED
+};
+
+struct Block {
+    State state;
+    int block_size;
+    int tag;
+    int last_access_time;
+};
+
+struct Set {
+    vector<Block> blocks;
+};
