@@ -36,6 +36,7 @@ public:
     }
 
     CacheLine* find_line(int tag, int current_time) {
+        // returns pointer to line if found, else returns nullptr
         for (auto& line : lines) {
             if (line.tag == tag) {
                 return &line;
@@ -66,6 +67,8 @@ public:
     std::vector<Set> sets;
     int number_of_sets;
     int number_of_lines;
+    int number_of_evictions;
+    int number_of_misses;
     int block_size;
 
     Cache(int number_of_sets, int associativity, int block_size) {
@@ -79,17 +82,21 @@ public:
     }
 
     CacheLine* access(int set_index, int tag, int current_time) {
+        // if hit -> returns actual line, with evicted = false
+        // if miss -> returns line to replace, with evicted = true
         Set& set = sets[set_index];
         CacheLine* line = set.find_line(tag, current_time);
         if (line) {
             line->evicted = false;
             return line;
         } else {
+            this->number_of_misses++;
             CacheLine* line_to_replace = set.line_to_replace();
+            line_to_replace->evicted = true;
             if (line_to_replace->state != INVALID) {
-                line_to_replace->evicted = true;
+                this->number_of_evictions++;
             }
-            return set.line_to_replace();
+            return line_to_replace;
         }
     }
 

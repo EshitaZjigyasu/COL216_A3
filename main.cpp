@@ -3,7 +3,7 @@
 #include <fstream>
 #include <vector>
 #include "utils.hpp"
-#include "core.hpp"
+#include "processor.hpp"
 using namespace std;
 
 // vector<Instr> parse_trace (ifstream f);
@@ -51,34 +51,29 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-    // helloo
-    Cache cache0 = Cache(no_of_sets, no_of_blocks, block_size);
-    Cache cache1 = Cache(no_of_sets, no_of_blocks, block_size);
-    Cache cache2 = Cache(no_of_sets, no_of_blocks, block_size);
-    Cache cache3 = Cache(no_of_sets, no_of_blocks, block_size);
 
-    vector<Instr> instructions0 = parse_trace(ifstream("trace0.txt"));
-    vector<Instr> instructions1 = parse_trace(ifstream("trace1.txt"));
-    vector<Instr> instructions2 = parse_trace(ifstream("trace2.txt"));
-    vector<Instr> instructions3 = parse_trace(ifstream("trace3.txt"));
+    vector<Instruction> instructions0 = parse_trace(ifstream("trace0.txt"));
+    vector<Instruction> instructions1 = parse_trace(ifstream("trace1.txt"));
+    vector<Instruction> instructions2 = parse_trace(ifstream("trace2.txt"));
+    vector<Instruction> instructions3 = parse_trace(ifstream("trace3.txt"));
 
-    Core core0 = Core(&cache0, &instructions0);
-    Core core1 = Core(&cache1, &instructions1);
-    Core core2 = Core(&cache2, &instructions2);
-    Core core3 = Core(&cache3, &instructions3);
+    Processor processor = Processor(&instructions0, &instructions1, &instructions2, &instructions3, no_of_sets, no_of_blocks, block_size);
 
     while(true) {
-        simulate_cycle();
-        if (core0.done && core1.done && core2.done && core3.done) {
+        if (processor.core0->done && processor.core1->done && processor.core2->done && processor.core3->done) {
             break;
+        } else {
+            processor.simulate();
         }
     }
 
     return 0;
 }
 
-vector<Instr> parse_trace (ifstream f) {
-    vector<Instr> vec;
+//TODO: count number of reads and writes
+
+vector<Instruction> parse_trace (ifstream f) {
+    vector<Instruction> vec;
     string line;
     while(!f.eof()) {
         getline(f,line);
@@ -96,7 +91,7 @@ vector<Instr> parse_trace (ifstream f) {
         }
         string hex_addr = line.substr(i, j - i + 1);
         int mem_addr = hex_to_int(hex_addr);
-        Instr in;
+        Instruction in;
         in.memory_addr = mem_addr;
         in.read = read;
         vec.push_back(in);

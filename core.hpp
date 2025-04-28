@@ -31,13 +31,6 @@ public:
     Cache* cache;
     bool done;
 
-    Core(std::vector<Instruction> trace, Cache* cache) {
-        this->trace = trace;
-        this->current_instr = 0;
-        this->cycle_count = 0;
-        this->idle_cycles = 0;
-        this->is_blocked = false;
-        this->cache = cache;
-        this->done = false;
-    }
+    Core(std::vector<Instruction>* trace, Cache* cache);
+    void run();
 };
