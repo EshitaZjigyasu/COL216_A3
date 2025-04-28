@@ -17,7 +17,7 @@ public:
     Cache* cache3;
     Bus* bus;
 
-    Processor(std::vector<Instruction>* trace0, std::vector<Instruction>* trace1, std::vector<Instruction>* trace2, std::vector<Instruction>* trace3, int number_of_sets, int associativity, int block_size);
+    Processor(vector<Instruction>** traces, int number_of_sets, int associativity, int block_size);
 
     void simulate();
 

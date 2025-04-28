@@ -1,3 +1,5 @@
+#include "globals.hpp"
+
 enum BusOperation {
     MEMREAD,
     RWITM,
@@ -6,8 +8,10 @@ enum BusOperation {
 
 struct BusMessage {
     BusOperation operation;
-    int address;
+    int index;
+    int tag;
     int core_id;
+    bool is_read;
 };
 
 class Bus {
@@ -17,6 +21,9 @@ public:
     BusMessage message;
     int when_free;
     bool is_free;
+
+    bool change_state[4];
+    State change_to[4];
 
     Bus();
 

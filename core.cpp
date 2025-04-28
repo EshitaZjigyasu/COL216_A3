@@ -1,5 +1,6 @@
 #include <vector>
 #include "cache.hpp"
+#include "bus.hpp"
 
 struct Instruction {
     bool is_read;
@@ -25,6 +26,7 @@ public:
     int number_of_writebacks;
     Cache* cache;
     bool done;
+    int when_free;
     RunResult result;
 
     Core(std::vector<Instruction>* trace, Cache* cache) {
@@ -47,7 +49,7 @@ public:
 
     //run returns true if cache hit, false if cache miss
     void run() {
-        Instruction instr = trace[current_instr];
+        Instruction instr = trace[current_instr++];
         int address = instr.address;
         bool is_read = instr.is_read;
 
@@ -67,4 +69,24 @@ public:
         this->result.state = line->state;
         this->result.hit = !line->evicted;
     }
+
+    State snoop(BusMessage message) {
+        CacheLine* line = cache->sets[message.index].find_line(message.tag);
+        if (line->evicted) {
+            return INVALID;
+        }
+        if (line->state == MODIFIED) {
+            return MODIFIED;
+        } else if (line->state == EXCLUSIVE) {
+            return EXCLUSIVE;
+        } else if (line->state == SHARED) {
+            return SHARED;
+        }
+    }
+
+    // this function is only called when the current core actually has the particular memory address in its cache (in one of the valid states)
+    // void update_state(int tag, int set_index, State state) {
+    //     CacheLine* line = cache->access(set_index, tag, cycle_count);
+    //     line->state = state;
+    // }
 };

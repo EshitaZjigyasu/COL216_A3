@@ -18,9 +18,7 @@ int main(int argc, char* argv[]) {
     // while loop in whichfirst we will chekc the blocked cores, then whcihc cores want to access the bus, and then we will sequentialize the remaining cores and randomize the cores that want to access the bus. will run till all the cores instructions have finished
 
     // output according to flag
-    int no_of_sets = 64; 
-    int no_of_blocks = 2;
-    int block_size = 32;
+    
     ifstream f;
     for (int i = 1; i < argc; i++) {
         if (argv[i][0] == '-') {
@@ -56,8 +54,9 @@ int main(int argc, char* argv[]) {
     vector<Instruction> instructions1 = parse_trace(ifstream("trace1.txt"));
     vector<Instruction> instructions2 = parse_trace(ifstream("trace2.txt"));
     vector<Instruction> instructions3 = parse_trace(ifstream("trace3.txt"));
+    vector<Instruction>* instructions[4] = {&instructions0, &instructions1, &instructions2, &instructions3};
 
-    Processor processor = Processor(&instructions0, &instructions1, &instructions2, &instructions3, no_of_sets, no_of_blocks, block_size);
+    Processor processor = Processor(instructions, no_of_sets, no_of_blocks, block_size);
 
     while(true) {
         if (processor.core0->done && processor.core1->done && processor.core2->done && processor.core3->done) {

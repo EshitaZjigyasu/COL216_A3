@@ -19,13 +19,6 @@
 
 #include <vector>
 
-enum State {
-    MODIFIED,
-    EXCLUSIVE,
-    SHARED,
-    INVALID
-};
-
 class CacheLine {
 public:
     int tag;
@@ -47,7 +40,7 @@ public:
 
     Set(int associativity, int block_size);
 
-    CacheLine* find_line(int tag, int current_time);
+    CacheLine* find_line(int tag);
 
     CacheLine* line_to_replace();
 };

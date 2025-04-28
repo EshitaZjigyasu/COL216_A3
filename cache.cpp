@@ -1,11 +1,5 @@
 #include <vector>
-
-enum State {
-    MODIFIED,
-    EXCLUSIVE,
-    SHARED,
-    INVALID
-};
+#include "globals.hpp";
 
 class CacheLine {
 public:
@@ -35,12 +29,11 @@ public:
         this->number_of_lines = associativity;
     }
 
-    CacheLine* find_line(int tag, int current_time) {
+    CacheLine* find_line(int tag) {
         // returns pointer to line if found, else returns nullptr
         for (auto& line : lines) {
             if (line.tag == tag) {
                 return &line;
-                line.last_access_time = current_time;
             }
         }
         return nullptr;
@@ -85,9 +78,11 @@ public:
         // if hit -> returns actual line, with evicted = false
         // if miss -> returns line to replace, with evicted = true
         Set& set = sets[set_index];
-        CacheLine* line = set.find_line(tag, current_time);
+        CacheLine* line = set.find_line(tag);
         if (line) {
             line->evicted = false;
+            line->last_access_time = current_time;
+
             return line;
         } else {
             this->number_of_misses++;
@@ -99,5 +94,7 @@ public:
             return line_to_replace;
         }
     }
+
+
 
 };
