@@ -52,12 +52,11 @@ int main(int argc, char* argv[]) {
 
     vector<Instruction> instructions[4];
 
-    vector<string> trace_files = {
-        name_of_app + "_proc0.trace",
-        name_of_app + "_proc1.trace",
-        name_of_app + "_proc2.trace",
-        name_of_app + "_proc3.trace"
-    };
+    vector<string> trace_files;
+    trace_files.push_back("trace1.txt");
+    trace_files.push_back("trace2.txt");
+    trace_files.push_back("trace3.txt");
+    trace_files.push_back("trace4.txt");
 
     for (int i = 0; i < 4; i++) {
         ifstream f(trace_files[i]);
