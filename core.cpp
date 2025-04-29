@@ -29,8 +29,8 @@ public:
     int when_free;
     RunResult result;
 
-    Core(std::vector<Instruction>* trace, Cache* cache) {
-        this->trace = *trace;
+    Core(std::vector<Instruction> trace, Cache* cache) {
+        this->trace = trace;
         this->current_instr = 0;
         this->cycle_count = 0;
         this->idle_cycles = 0;
@@ -41,7 +41,7 @@ public:
             -1,
             -1,
             true,
-            INVALID,
+            State::INVALID,
             false,
             false
         };
@@ -62,6 +62,7 @@ public:
         }
 
         CacheLine* line = cache->access(set_index, tag, cycle_count);
+        
         this->result.done = false;
         this->result.set_index = set_index;
         this->result.tag = tag;
@@ -70,19 +71,19 @@ public:
         this->result.hit = !line->evicted;
     }
 
-    State snoop(BusMessage message) {
-        CacheLine* line = cache->sets[message.index].find_line(message.tag);
-        if (line->evicted) {
-            return INVALID;
-        }
-        if (line->state == MODIFIED) {
-            return MODIFIED;
-        } else if (line->state == EXCLUSIVE) {
-            return EXCLUSIVE;
-        } else if (line->state == SHARED) {
-            return SHARED;
-        }
-    }
+    // State snoop(BusMessage message) {
+    //     CacheLine* line = cache->sets[message.index].find_line(message.tag);
+    //     if (line->evicted) {
+    //         return State::INVALID;
+    //     }
+    //     if (line->state == MODIFIED) {
+    //         return State::MODIFIED;
+    //     } else if (line->state == EXCLUSIVE) {
+    //         return State::EXCLUSIVE;
+    //     } else if (line->state == SHARED) {
+    //         return State::SHARED;
+    //     }
+    // }
 
     // this function is only called when the current core actually has the particular memory address in its cache (in one of the valid states)
     // void update_state(int tag, int set_index, State state) {

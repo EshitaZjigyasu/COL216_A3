@@ -17,7 +17,7 @@ public:
     Cache* cache3;
     Bus* bus;
 
-    Processor(vector<Instruction>** traces, int number_of_sets, int associativity, int block_size);
+    Processor(vector<Instruction>(&traces)[4], int number_of_sets, int associativity, int block_size);
 
     void simulate();
 

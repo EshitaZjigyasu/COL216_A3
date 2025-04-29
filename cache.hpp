@@ -18,6 +18,7 @@
 // }
 
 #include <vector>
+#include "globals.hpp"
 
 class CacheLine {
 public:

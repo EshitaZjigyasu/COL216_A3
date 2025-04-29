@@ -5,119 +5,196 @@ using namespace std;
 
 class Processor {
 public:
-    // Core* core0;
-    // Core* core1;
-    // Core* core2;
-    // Core* core3;
-    // Cache* cache0;
-    // Cache* cache1;
-    // Cache* cache2;
-    // Cache* cache3;
     Core** cores;
     Cache** caches;
+    // vector<Core> cores;
+    // vector<Cache> caches;
     Bus* bus;
-    vector<Core*> unblocked_cores;
+    // vector<Core*> unblocked_cores;
 
-    Processor(vector<Instruction>** traces, int number_of_sets, int associativity, int block_size) {
+    //TODO: choose the data structure for cores and caches
+
+    // Processor(vector<Instruction>(&traces)[4], int number_of_sets, int associativity, int block_size) {
+    //     for(int i = 0; i < 4; i++) {
+    //         caches.push_back(Cache(number_of_sets, associativity, block_size));
+    //         cores.push_back(Core(traces[i], &caches[i]));
+    //     }
+    //     this->bus = new Bus();
+    // }
+
+    // ~Processor() {
+    //     delete bus;
+    // }
+
+    Processor(vector<Instruction>(&traces)[4], int number_of_sets, int associativity, int block_size) {
         for(int i = 0; i < 4; i++) {
-            caches[i] = &Cache(number_of_sets, associativity, block_size);
-            cores[i] = &Core(traces[i], caches[i]);
+            caches[i] = new Cache(number_of_sets, associativity, block_size);
+            cores[i] = new Core(traces[i], caches[i]);
         }
-        this->bus = &Bus();
+        this->bus = new Bus();
+    }
+
+    ~Processor() {
+        for (int i = 0; i < 4; i++) {
+            delete caches[i];
+            delete cores[i];
+        }
+        delete bus;
     }
 
     void simulate() {
         cycle_count++;
+
         int evict = 0;
-        if(cycle_count == bus->when_free){
-            bus->is_free;
-            CacheLine* line;
-            for(int i = 0; i < 4; i++)
-            {
-                if(bus->change_state[i]) {
-                    line = caches[i]->sets[bus->message.index].find_line(bus->message.tag);
-                    line->state = bus->change_to[i];
-                    bus->change_state[i] = false;
-                }
-            }
-        }
-        if(bus->message.operation == RWITM) {
-            if(cycle_count == bus->when_free - 100) {
-                CacheLine* line;
+
+        if (!bus->is_free) {
+            if(cycle_count == bus->when_free) {
+                // bus is free now
+                // sets the states of the local and snooping caches accordingly 
+                bus->is_free = true;
+                CacheLine* line_on_bus;
                 for(int i = 0; i < 4; i++) {
                     if(bus->change_state[i]) {
-                        if(bus->change_to[i] == INVALID) {
-                            line = caches[i]->sets[bus->message.index].find_line(bus->message.tag);
-                            line->state = bus->change_to[i];
+                        line_on_bus = caches[i]->sets[bus->message.index].find_line(bus->message.tag);
+                        if(line_on_bus != nullptr) {
+                            line_on_bus->state = bus->change_to[i];
                             bus->change_state[i] = false;
                         }
                     }
                 }
             }
-        }
-
-        for(int i = 0; i < 4; i++) {
-            if(cycle_count == cores[i]->when_free) {
-                cores[i]->is_blocked = false;
+            if(cycle_count == bus->message.set_local && bus->message.operation == CTOC_THEN_WRITE) {
+                CacheLine* line_on_bus = caches[bus->message.local_core_id]->sets[bus->message.index].find_line(bus->message.tag);
+                if(line_on_bus != nullptr) {
+                    line_on_bus->state = State::SHARED;
+                    bus->change_state[bus->message.local_core_id] = false;
+                }
+            }
+            if(cycle_count == bus->message.set_remote && bus->message.operation == WRITE_THEN_READ) {
+                CacheLine* line_on_bus = caches[bus->message.remote_core_id]->sets[bus->message.index].find_line(bus->message.tag);
+                if(line_on_bus != nullptr) {
+                    line_on_bus->state = State::INVALID;
+                    bus->change_state[bus->message.remote_core_id] = false;
+                }
+            }
+            if(bus->message.operation == EVICT_THEN_MEMREAD && cycle_count == bus->when_free - 100) {
+                bus->message.operation = MEMREAD;
+            }
+            if(bus->message.operation == EVICT_THEN_RWITM && cycle_count == bus->when_free - 100) {
+                bus->message.operation = RWITM;
             }
         }
+        // if(bus->message.operation == RWITM) {
+        //     if(cycle_count == bus->when_free - 100) {
+        //         CacheLine* line;
+        //         for(int i = 0; i < 4; i++) {
+        //             if(bus->change_state[i]) {
+        //                 if(bus->change_to[i] == INVALID) {
+        //                     line = caches[i]->sets[bus->message.index].find_line(bus->message.tag);
+        //                     line->state = bus->change_to[i];
+        //                     bus->change_state[i] = false;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        // unblock the core that is using the bus if the operation is done
+        // for(int i = 0; i < 4; i++) {
+        //     if(cycle_count == cores[i]->when_free) {
+        //         cores[i]->is_blocked = false;
+        //     }
+        // }
 
         for(int i = 0; i < 4; i++) {
+
+
             if (cores[i]->is_blocked) {
-                cores[i]->idle_cycles++;
+                // cores[i]->idle_cycles++;
+                if (cores[i]->when_free == -1) {
+                    // it is waiting for the bus
+                    // TODO: request for bus here, if didn't get bus, then increment idle_cycles
+                    cores[i]->idle_cycles++;
+                } else {
+                    // it is using the bus
+                    // TODO: check what happens during CTOC_THEN_WRITE and WRITE_THEN_READ
+                    if (cycle_count == cores[i]->when_free) {
+                        cores[i]->is_blocked = false;
+                        cores[i]->when_free = -1;
+                    }
+                }
             }
-            else {
+
+            if (!cores[i]->is_blocked && !cores[i]->done) {
                 cores[i]->run();
                 if(cores[i]->result.done) {
+                    // dones means last instruction got finished in last cycle
                     cores[i]->done = true;
                 }
                 else{
-                    if(cores[i]->result.is_read && cores[i]->result.hit) {
-                        //no op
-                    }
-                    else if(cores[i]->result.is_read && !cores[i]->result.hit) {
-                        //eviction logic
-                        if(cores[i]->result.state == MODIFIED && !cores[i]->result.hit) {
+                    // if miss, then check if writeback is needed
+                    if(!cores[i]->result.hit) {
+                        if (cores[i]->result.state == MODIFIED) {
                             cores[i]->number_of_writebacks++;
                             evict = 100;
                         }
+                    }
 
-                        BusMessage message = BusMessage{MEMREAD, cores[i]->result.set_index, cores[i]->result.tag, i, true};
+                    if(cores[i]->result.is_read && cores[i]->result.hit) {
+                        //READHIT
+                        //no op
+                        //takes new instruction in next cycle
+                    }
+                    else if(cores[i]->result.is_read && !cores[i]->result.hit) {
+                        //READMISS
+                        BusMessage message;
+                        if(evict == 0) {
+                            message = BusMessage{MEMREAD, cores[i]->result.set_index, cores[i]->result.tag, i, -1, true, -1, -1};
+                        } else {
+                            message = BusMessage{EVICT_THEN_MEMREAD, cores[i]->result.set_index, cores[i]->result.tag, i, -1, true, -1, -1};
+                        }
                         if(this->bus->request_bus(message)) {
                             cores[i]->is_blocked = true;
+                            cores[i]->when_free = bus->when_free;
                         }
                         else {
                             cores[i]->is_blocked = true;
+                            cores[i]->when_free = -1;
                         }
                     }
                     else if (!cores[i]->result.is_read && cores[i]->result.hit) {
+                        //WRITEHIT
                         if(cores[i]->result.state == EXCLUSIVE) {
                             cores[i]->result.state = MODIFIED;
                         }
                         else if(cores[i]->result.state == SHARED) {
                             cores[i]->result.state = MODIFIED;
-                            BusMessage message = BusMessage{INVALIDATE, cores[i]->result.set_index, cores[i]->result.tag, i, false};
+                            BusMessage message = BusMessage{INVALIDATE, cores[i]->result.set_index, cores[i]->result.tag, i, -1, false, -1, -1};
                             if(this->bus->request_bus(message)) {
-                                cores[i]->is_blocked = true;
+                                // cores[i]->is_blocked = true;
+                                cores[i]->is_blocked = false;
                             }
                             else {
                                 cores[i]->is_blocked = true;
+                                cores[i]->when_free = -1;
                             }
                         }
                     }
                     else if (!cores[i]->result.is_read && !cores[i]->result.hit) {
-                        //eviction logic
-                        if(cores[i]->result.state == MODIFIED && !cores[i]->result.hit) {
-                            cores[i]->number_of_writebacks++;
-                            evict = 100;
+                        //WRITEMISS
+                        BusMessage message;
+                        if(evict == 0) {
+                            message = BusMessage{RWITM, cores[i]->result.set_index, cores[i]->result.tag, i, -1, false, -1, -1};
+                        } else {
+                            message = BusMessage{EVICT_THEN_RWITM, cores[i]->result.set_index, cores[i]->result.tag, i, -1, false, -1, -1};
                         }
 
-                        BusMessage message = BusMessage{RWITM, cores[i]->result.set_index, cores[i]->result.tag, i, false};
                         if(this->bus->request_bus(message)) {
                             cores[i]->is_blocked = true;
-                        }
-                        else {
+                            cores[i]->when_free = bus->when_free;
+                        } else {
                             cores[i]->is_blocked = true;
+                            cores[i]->when_free = -1;
                         }
                     }
                 }
@@ -125,147 +202,177 @@ public:
         }
 
         for(int i = 0; i < 4; i++) {
-            if (bus->message.core_id != i) {
+            if (bus->message.local_core_id != i) {
                 CacheLine* line = caches[i]->sets[bus->message.index].find_line(bus->message.tag);
-                State state;
+
+                State state_in_remote_cache;
                 if (line == nullptr) {
-                    state = INVALID;
+                    state_in_remote_cache = INVALID;
                 } else if (line->state == INVALID) {
-                    state = INVALID;
+                    state_in_remote_cache = INVALID;
                 } else if (line->state == MODIFIED) {
-                    state = MODIFIED;
+                    state_in_remote_cache = MODIFIED;
                 } else if (line->state == EXCLUSIVE) {
-                    state = EXCLUSIVE;
+                    state_in_remote_cache = EXCLUSIVE;
                 } else if (line->state == SHARED) {
-                    state = SHARED;
+                    state_in_remote_cache = SHARED;
                 }
+
                 if(bus->message.operation == INVALIDATE) {
                     if (line != nullptr) {
                         bus->change_state[i] = true;
                         bus->change_to[i] = INVALID;
+                        bus->change_state[bus->message.local_core_id] = true;
+                        bus->change_to[bus->message.local_core_id] = MODIFIED;
                     }
                 }
                 else if(bus->message.operation == MEMREAD) {
-                    
-                    if(state != INVALID) {
+                    if(state_in_remote_cache == EXCLUSIVE) {
+                        bus->message.operation = C_TO_C;
+                        bus->when_free = cycle_count + 2 * caches[0]->block_size;
+                        bus->change_state[i] = true;
+                        bus->change_state[bus->message.local_core_id] = true;
+                        bus->change_to[i] = SHARED;
+                        bus->change_to[bus->message.local_core_id] = SHARED;
+                    }
+                    else if(state_in_remote_cache == SHARED) {
+                        bus->message.operation = C_TO_C;
+                        bus->when_free = cycle_count + 2 * caches[0]->block_size;
+                        bus->change_state[bus->message.local_core_id] = true;
+                        bus->change_to[bus->message.local_core_id] = SHARED;
+                    }
+                    else if(state_in_remote_cache == MODIFIED) {
+                        bus->message.operation = CTOC_THEN_WRITE;
+                        bus->when_free = cycle_count + 2 * caches[0]->block_size + 100;
+                        bus->message.set_local = cycle_count + 2 * caches[0]->block_size;
+                        bus->message.remote_core_id = i;
                         bus->change_state[i] = true;
                         bus->change_to[i] = SHARED;
-                        bus->when_free = cycle_count + 2 * caches[0]->block_size + evict;
-                    }
+                        bus->change_state[bus->message.local_core_id] = true;
+                        bus->change_to[bus->message.local_core_id] = SHARED;
+                    } else {}
                 }
                 else if(bus->message.operation == RWITM) {
-                    bus->change_state[bus->message.core_id] = true;
-                    bus->change_to[bus->message.core_id] = MODIFIED;
+                    // bus->change_state[bus->message.local_core_id] = true;
+                    // bus->change_to[bus->message.local_core_id] = MODIFIED;
 
-                    if(state == EXCLUSIVE || state == SHARED) {
+                    // if(state == EXCLUSIVE || state == SHARED) {
+                    //     bus->change_state[i] = true;
+                    //     bus->change_to[i] = INVALID;
+                    //     bus->when_free = cycle_count + 100 + evict;
+                    // }
+                    // else if(state == MODIFIED) {
+                    //     bus->when_free = cycle_count + 200;
+                    //     // how to do SS = I at bus->when_free - 100?
+                    //     bus->change_state[i] = true;
+                    //     bus->change_to[i] = INVALID;
+                    // }
+
+                    if(state_in_remote_cache == EXCLUSIVE || state_in_remote_cache == SHARED) {
                         bus->change_state[i] = true;
                         bus->change_to[i] = INVALID;
-                        bus->when_free = cycle_count + 100 + evict;
+                        bus->change_state[bus->message.local_core_id] = true;
+                        bus->change_to[bus->message.local_core_id] = MODIFIED;
                     }
-                    else if(state == MODIFIED) {
+                    else if(state_in_remote_cache == MODIFIED) {
+                        bus->message.operation = WRITE_THEN_READ;
                         bus->when_free = cycle_count + 200;
-                        // how to do SS = I at bus->when_free - 100?
+                        bus->message.set_remote = cycle_count + 100;
+                        bus->message.remote_core_id = i;
                         bus->change_state[i] = true;
                         bus->change_to[i] = INVALID;
+                        bus->change_state[bus->message.local_core_id] = true;
+                        bus->change_to[bus->message.local_core_id] = MODIFIED;
                     }
                 }
             }
             
         }
 
-
-
-
-
-
-
-
-
-
-        unblocked_cores.clear();
-        for(int i = 0; i < 4; i++) {
-            if (!cores[i]->is_blocked) {
-                unblocked_cores.push_back(cores[i]);
-                cores[i]->run();
-            }
-        }
-        int n = unblocked_cores.size();
-        if (n != 0) {
-            Core* core_that_wants_bus = nullptr;
-            for(int i = 0; i < n; i++) {
-                core_that_wants_bus = unblocked_cores[i];
-                if (!unblocked_cores[i]->result.hit || (unblocked_cores[i]->result.state == SHARED && !unblocked_cores[i]->result.is_read)) {
-                    core_that_wants_bus = unblocked_cores[i];
-                    break;
-                }
-            }
-            if (core_that_wants_bus == nullptr) {
-                return;
-            }
-            BusMessage message;
-            message.index = core_that_wants_bus->result.set_index;
-            message.tag = core_that_wants_bus->result.tag;
-            message.is_read = core_that_wants_bus->result.is_read;
-            if (core_that_wants_bus == cores[0]) {
-                message.core_id = 0;
-            } else if (core_that_wants_bus == cores[1]) {
-                message.core_id = 1;
-            } else if (core_that_wants_bus == cores[2]) {
-                message.core_id = 2;
-            } else if (core_that_wants_bus == cores[3]) {
-                message.core_id = 3;
-            }
-            if (!core_that_wants_bus->result.is_read && core_that_wants_bus->result.state == SHARED) {
-                message.operation = INVALIDATE;
-            }
-            else {
-                message.operation = MEMREAD;
-            }
-            core_that_wants_bus->is_blocked = true;
-            if(bus->request_bus(message)) {
-                if (message.operation == INVALIDATE) {
-                    for(int i = 0; i < n; i++) {
-                        if (cores[i] != core_that_wants_bus) {
-                            State state = cores[i]->snoop(message.tag, message.index, false);
-                            if (state != INVALID) {
-                                cores[i]->update_state(message.tag, message.index, INVALID);
-                            }
-                        }
-                    }
-                }
-                else {
-                    if (message.is_read) {
-                        for(int i = 0; i < n; i++) {
-                            if (cores[i] != core_that_wants_bus) {
-                                State state = cores[i]->snoop(message.tag, message.index, false);
-                                if (state == EXCLUSIVE) {
-                                    cores[i]->update_state(message.tag, message.index, SHARED);
-                                    core_that_wants_bus->update_state(message.tag, message.index, SHARED);
-                                    bus->bytes_transferred += caches[i]->block_size;
-                                    bus->when_free = cycle_count + 2 * caches[i]->block_size;
-                                    bus->is_free = false;
-                                }
-                                else if (state == SHARED) {
-                                    core_that_wants_bus->update_state(message.tag, message.index, SHARED);
-                                    bus->bytes_transferred += caches[i]->block_size;
-                                    bus->when_free = cycle_count + 2 * caches[i]->block_size;
-                                    bus->is_free = false;
-                                }
-                                else if (state == MODIFIED) {
-                                    cores[i]->update_state(message.tag, message.index, SHARED);
-                                    core_that_wants_bus->update_state(message.tag, message.index, SHARED);
-                                    bus->bytes_transferred += caches[i]->block_size;
-                                    bus->when_free = cycle_count + 2 * caches[i]->block_size;
-                                    bus->is_free = false;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        else {
-            return;
-        }
+        // unblocked_cores.clear();
+        // for(int i = 0; i < 4; i++) {
+        //     if (!cores[i]->is_blocked) {
+        //         unblocked_cores.push_back(cores[i]);
+        //         cores[i]->run();
+        //     }
+        // }
+        // int n = unblocked_cores.size();
+        // if (n != 0) {
+        //     Core* core_that_wants_bus = nullptr;
+        //     for(int i = 0; i < n; i++) {
+        //         core_that_wants_bus = unblocked_cores[i];
+        //         if (!unblocked_cores[i]->result.hit || (unblocked_cores[i]->result.state == SHARED && !unblocked_cores[i]->result.is_read)) {
+        //             core_that_wants_bus = unblocked_cores[i];
+        //             break;
+        //         }
+        //     }
+        //     if (core_that_wants_bus == nullptr) {
+        //         return;
+        //     }
+        //     BusMessage message;
+        //     message.index = core_that_wants_bus->result.set_index;
+        //     message.tag = core_that_wants_bus->result.tag;
+        //     message.is_read = core_that_wants_bus->result.is_read;
+        //     if (core_that_wants_bus == cores[0]) {
+        //         message.core_id = 0;
+        //     } else if (core_that_wants_bus == cores[1]) {
+        //         message.core_id = 1;
+        //     } else if (core_that_wants_bus == cores[2]) {
+        //         message.core_id = 2;
+        //     } else if (core_that_wants_bus == cores[3]) {
+        //         message.core_id = 3;
+        //     }
+        //     if (!core_that_wants_bus->result.is_read && core_that_wants_bus->result.state == SHARED) {
+        //         message.operation = INVALIDATE;
+        //     }
+        //     else {
+        //         message.operation = MEMREAD;
+        //     }
+        //     core_that_wants_bus->is_blocked = true;
+        //     if(bus->request_bus(message)) {
+        //         if (message.operation == INVALIDATE) {
+        //             for(int i = 0; i < n; i++) {
+        //                 if (cores[i] != core_that_wants_bus) {
+        //                     State state = cores[i]->snoop(message.tag, message.index, false);
+        //                     if (state != INVALID) {
+        //                         cores[i]->update_state(message.tag, message.index, INVALID);
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //         else {
+        //             if (message.is_read) {
+        //                 for(int i = 0; i < n; i++) {
+        //                     if (cores[i] != core_that_wants_bus) {
+        //                         State state = cores[i]->snoop(message.tag, message.index, false);
+        //                         if (state == EXCLUSIVE) {
+        //                             cores[i]->update_state(message.tag, message.index, SHARED);
+        //                             core_that_wants_bus->update_state(message.tag, message.index, SHARED);
+        //                             bus->bytes_transferred += caches[i]->block_size;
+        //                             bus->when_free = cycle_count + 2 * caches[i]->block_size;
+        //                             bus->is_free = false;
+        //                         }
+        //                         else if (state == SHARED) {
+        //                             core_that_wants_bus->update_state(message.tag, message.index, SHARED);
+        //                             bus->bytes_transferred += caches[i]->block_size;
+        //                             bus->when_free = cycle_count + 2 * caches[i]->block_size;
+        //                             bus->is_free = false;
+        //                         }
+        //                         else if (state == MODIFIED) {
+        //                             cores[i]->update_state(message.tag, message.index, SHARED);
+        //                             core_that_wants_bus->update_state(message.tag, message.index, SHARED);
+        //                             bus->bytes_transferred += caches[i]->block_size;
+        //                             bus->when_free = cycle_count + 2 * caches[i]->block_size;
+        //                             bus->is_free = false;
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+        // else {
+        //     return;
+        // }
     }
 };

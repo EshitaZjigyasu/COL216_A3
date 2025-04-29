@@ -82,13 +82,14 @@ public:
         if (line) {
             line->evicted = false;
             line->last_access_time = current_time;
-
             return line;
         } else {
             this->number_of_misses++;
             CacheLine* line_to_replace = set.line_to_replace();
             line_to_replace->evicted = true;
             if (line_to_replace->state != INVALID) {
+                // TODO: check if eviction means writeback / setting invalid / replacing with some other address
+                // what happens if you replace an invalid line? is it an eviction? if not then is setting the line to invalid considered an eviction?
                 this->number_of_evictions++;
             }
             return line_to_replace;

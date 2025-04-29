@@ -43,7 +43,7 @@ public:
     RunResult result;
     int when_free;
 
-    Core(std::vector<Instruction>* trace, Cache* cache);
+    Core(std::vector<Instruction> trace, Cache* cache);
     void run();
     State snoop(BusMessage message);
 
