@@ -1,5 +1,5 @@
 #include <vector>
-#include "globals.hpp";
+#include "globals.hpp"
 
 class CacheLine {
 public:

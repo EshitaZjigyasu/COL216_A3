@@ -8,7 +8,7 @@
 #include "processor.hpp"
 using namespace std;
 
-// vector<Instr> parse_trace (ifstream f);
+vector<Instruction> parse_trace (ifstream& f);
 
 
 int main(int argc, char* argv[]) {

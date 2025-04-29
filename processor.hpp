@@ -1,6 +1,4 @@
 #include "core.hpp"
-#include "cache.hpp"
-#include "bus.hpp"
 #include <vector>
 using namespace std;
 

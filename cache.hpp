@@ -18,7 +18,7 @@
 // }
 
 #include <vector>
-#include "globals.hpp"
+#include "bus.hpp"
 
 class CacheLine {
 public:

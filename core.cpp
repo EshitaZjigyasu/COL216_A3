@@ -1,6 +1,5 @@
 #include <vector>
 #include "cache.hpp"
-#include "bus.hpp"
 
 struct Instruction {
     bool is_read;
