@@ -4,12 +4,11 @@
 #include <vector>
 #include <sstream>
 
-// #include "utils.hpp"
+#include "utils.hpp"
 #include "processor.hpp"
 using namespace std;
 
 vector<Instruction> parse_trace (ifstream& f);
-
 
 int main(int argc, char* argv[]) {
     // while loop in whichfirst we will check the blocked cores, then whcihc cores want to access the bus, and then we will sequentialize the remaining cores and randomize the cores that want to access the bus. will run till all the cores instructions have finished
@@ -53,10 +52,10 @@ int main(int argc, char* argv[]) {
     vector<Instruction> instructions[4];
 
     vector<string> trace_files;
-    trace_files.push_back("trace1.txt");
-    trace_files.push_back("trace2.txt");
-    trace_files.push_back("trace3.txt");
-    trace_files.push_back("trace4.txt");
+    trace_files.push_back(name_of_app + "_proc0.trace");
+    trace_files.push_back(name_of_app + "_proc1.trace");
+    trace_files.push_back(name_of_app + "_proc2.trace");
+    trace_files.push_back(name_of_app + "_proc3.trace");
 
     for (int i = 0; i < 4; i++) {
         ifstream f(trace_files[i]);
@@ -64,21 +63,16 @@ int main(int argc, char* argv[]) {
             cerr << "Error: Could not open file " << trace_files[i] << endl;
             return 1;
         }
-        // cout << "Reading " << trace_files[i] << endl;
         instructions[i] = parse_trace(f);
         f.close();
     }
-    cout << "Read all traces" << endl;
+
     Processor processor = Processor(instructions, no_of_sets, no_of_blocks, block_size);
-    cout << "Processor created" << endl;
 
     while(true) {
-        cout << "hi" << endl;
         if (processor.cores[0].done && processor.cores[1].done && processor.cores[2].done && processor.cores[3].done) {
             break;
         } else {
-            cout << "-------------------------------" << endl;
-            cout << "Cycle: " << cycle_count << endl;
             processor.simulate();
         }
     }
@@ -91,7 +85,6 @@ int main(int argc, char* argv[]) {
 //TODO: count number of reads and writes
 
 vector<Instruction> parse_trace (ifstream& f) {
-    // cout << "im here" << endl;
     vector<Instruction> instructions;
     string line;
 
@@ -125,7 +118,7 @@ vector<Instruction> parse_trace (ifstream& f) {
             continue;
         }
     }
-    // cout << "im done" << endl;
+
     return instructions;
 
     // while(!f.eof()) {
