@@ -77,22 +77,22 @@ using namespace std;
             if(cycle_count == bus->message.set_local && bus->message.operation == CTOC_THEN_WRITE) {
                 CacheLine* line_on_bus = caches[bus->message.local_core_id].sets[bus->message.index].find_line(bus->message.tag);
                 if(line_on_bus != nullptr) {
-                    line_on_bus->state = State::SHARED;
+                    line_on_bus->state = SHARED;
                     bus->change_state[bus->message.local_core_id] = false;
                 }
             }
             if(cycle_count == bus->message.set_remote && bus->message.operation == WRITE_THEN_READ) {
                 CacheLine* line_on_bus = caches[bus->message.remote_core_id].sets[bus->message.index].find_line(bus->message.tag);
                 if(line_on_bus != nullptr) {
-                    line_on_bus->state = State::INVALID;
+                    line_on_bus->state = INVALID;
                     bus->change_state[bus->message.remote_core_id] = false;
                 }
             }
             if(bus->message.operation == EVICT_THEN_MEMREAD && cycle_count == bus->when_free - 100) {
-                bus->message.operation = BusOperation::MEMREAD;
+                bus->message.operation = MEMREAD;
             }
             if(bus->message.operation == EVICT_THEN_RWITM && cycle_count == bus->when_free - 100) {
-                bus->message.operation = BusOperation::RWITM;
+                bus->message.operation = RWITM;
             }
         }
         // if(bus->message.operation == RWITM) {
@@ -165,9 +165,25 @@ using namespace std;
                         cout << "Core " << i << " has a read miss" << endl;
                         BusMessage message;
                         if(evict == 0) {
-                            message = BusMessage{BusOperation::MEMREAD, cores[i].result.set_index, cores[i].result.tag, i, -1, true, -1, -1};
+                            // message = BusMessage{MEMREAD, cores[i].result.set_index, cores[i].result.tag, i, -1, true, -1, -1};
+                            message.operation = MEMREAD;
+                            message.index = cores[i].result.set_index;
+                            message.tag = cores[i].result.tag;
+                            message.local_core_id = i;
+                            message.remote_core_id = -1;
+                            message.is_read = true;
+                            message.set_local = -1;
+                            message.set_remote = -1;
                         } else {
-                            message = BusMessage{BusOperation::EVICT_THEN_MEMREAD, cores[i].result.set_index, cores[i].result.tag, i, -1, true, -1, -1};
+                            // message = BusMessage{EVICT_THEN_MEMREAD, cores[i].result.set_index, cores[i].result.tag, i, -1, true, -1, -1};
+                            message.operation = EVICT_THEN_MEMREAD;
+                            message.index = cores[i].result.set_index;
+                            message.tag = cores[i].result.tag;
+                            message.local_core_id = i;
+                            message.remote_core_id = -1;
+                            message.is_read = true;
+                            message.set_local = -1;
+                            message.set_remote = -1;
                         }
                         if(this->bus->request_bus(message)) {
                             cores[i].is_blocked = true;
@@ -182,11 +198,21 @@ using namespace std;
                         //WRITEHIT
                         cout << "Core " << i << " has a write hit" << endl;
                         if(cores[i].result.state == EXCLUSIVE) {
-                            cores[i].result.state = State::MODIFIED;
+                            cores[i].result.state = MODIFIED;
                         }
                         else if(cores[i].result.state == SHARED) {
-                            cores[i].result.state = State::MODIFIED;
-                            BusMessage message = BusMessage{BusOperation::INVALIDATE, cores[i].result.set_index, cores[i].result.tag, i, -1, false, -1, -1};
+                            cores[i].result.state = MODIFIED;
+                            BusMessage message;
+                            // BusMessage message = BusMessage{INVALIDATE, cores[i].result.set_index, cores[i].result.tag, i, -1, false, -1, -1};
+                            message.operation = INVALIDATE;
+                            message.index = cores[i].result.set_index;
+                            message.tag = cores[i].result.tag;
+                            message.local_core_id = i;
+                            message.remote_core_id = -1;
+                            message.is_read = false;
+                            message.set_local = -1;
+                            message.set_remote = -1;
+                            
                             if(this->bus->request_bus(message)) {
                                 // cores[i]->is_blocked = true;
                                 cores[i].is_blocked = false;
@@ -202,9 +228,25 @@ using namespace std;
                         cout << "Core " << i << " has a write miss" << endl;
                         BusMessage message;
                         if(evict == 0) {
-                            message = BusMessage{BusOperation::RWITM, cores[i].result.set_index, cores[i].result.tag, i, -1, false, -1, -1};
+                            // message = BusMessage{RWITM, cores[i].result.set_index, cores[i].result.tag, i, -1, false, -1, -1};
+                            message.operation = RWITM;
+                            message.index = cores[i].result.set_index;
+                            message.tag = cores[i].result.tag;
+                            message.local_core_id = i;
+                            message.remote_core_id = -1;
+                            message.is_read = false;
+                            message.set_local = -1;
+                            message.set_remote = -1;
                         } else {
-                            message = BusMessage{BusOperation::EVICT_THEN_RWITM, cores[i].result.set_index, cores[i].result.tag, i, -1, false, -1, -1};
+                            // message = BusMessage{EVICT_THEN_RWITM, cores[i].result.set_index, cores[i].result.tag, i, -1, false, -1, -1};
+                            message.operation = EVICT_THEN_RWITM;
+                            message.index = cores[i].result.set_index;
+                            message.tag = cores[i].result.tag;
+                            message.local_core_id = i;
+                            message.remote_core_id = -1;
+                            message.is_read = false;
+                            message.set_local = -1;
+                            message.set_remote = -1;
                         }
 
                         if(this->bus->request_bus(message)) {
@@ -225,49 +267,49 @@ using namespace std;
 
                 State state_in_remote_cache;
                 if (line == nullptr) {
-                    state_in_remote_cache = State::INVALID;
+                    state_in_remote_cache = INVALID;
                 } else if (line->state == INVALID) {
-                    state_in_remote_cache = State::INVALID;
+                    state_in_remote_cache = INVALID;
                 } else if (line->state == MODIFIED) {
-                    state_in_remote_cache = State::MODIFIED;
+                    state_in_remote_cache = MODIFIED;
                 } else if (line->state == EXCLUSIVE) {
-                    state_in_remote_cache = State::EXCLUSIVE;
+                    state_in_remote_cache = EXCLUSIVE;
                 } else if (line->state == SHARED) {
-                    state_in_remote_cache = State::SHARED;
+                    state_in_remote_cache = SHARED;
                 }
 
                 if(bus->message.operation == INVALIDATE) {
                     if (line != nullptr) {
                         bus->change_state[i] = true;
-                        bus->change_to[i] = State::INVALID;
+                        bus->change_to[i] = INVALID;
                         bus->change_state[bus->message.local_core_id] = true;
-                        bus->change_to[bus->message.local_core_id] = State::MODIFIED;
+                        bus->change_to[bus->message.local_core_id] = MODIFIED;
                     }
                 }
                 else if(bus->message.operation == MEMREAD) {
                     if(state_in_remote_cache == EXCLUSIVE) {
-                        bus->message.operation = BusOperation::C_TO_C;
+                        bus->message.operation = C_TO_C;
                         bus->when_free = cycle_count + 2 * caches[0].block_size;
                         bus->change_state[i] = true;
                         bus->change_state[bus->message.local_core_id] = true;
-                        bus->change_to[i] = State::SHARED;
-                        bus->change_to[bus->message.local_core_id] = State::SHARED;
+                        bus->change_to[i] = SHARED;
+                        bus->change_to[bus->message.local_core_id] = SHARED;
                     }
                     else if(state_in_remote_cache == SHARED) {
-                        bus->message.operation = BusOperation::C_TO_C;
+                        bus->message.operation = C_TO_C;
                         bus->when_free = cycle_count + 2 * caches[0].block_size;
                         bus->change_state[bus->message.local_core_id] = true;
-                        bus->change_to[bus->message.local_core_id] = State::SHARED;
+                        bus->change_to[bus->message.local_core_id] = SHARED;
                     }
                     else if(state_in_remote_cache == MODIFIED) {
-                        bus->message.operation = BusOperation::CTOC_THEN_WRITE;
+                        bus->message.operation = CTOC_THEN_WRITE;
                         bus->when_free = cycle_count + 2 * caches[0].block_size + 100;
                         bus->message.set_local = cycle_count + 2 * caches[0].block_size;
                         bus->message.remote_core_id = i;
                         bus->change_state[i] = true;
-                        bus->change_to[i] = State::SHARED;
+                        bus->change_to[i] = SHARED;
                         bus->change_state[bus->message.local_core_id] = true;
-                        bus->change_to[bus->message.local_core_id] = State::SHARED;
+                        bus->change_to[bus->message.local_core_id] = SHARED;
                     } else {}
                 }
                 else if(bus->message.operation == RWITM) {
@@ -288,19 +330,19 @@ using namespace std;
 
                     if(state_in_remote_cache == EXCLUSIVE || state_in_remote_cache == SHARED) {
                         bus->change_state[i] = true;
-                        bus->change_to[i] = State::INVALID;
+                        bus->change_to[i] = INVALID;
                         bus->change_state[bus->message.local_core_id] = true;
-                        bus->change_to[bus->message.local_core_id] = State::MODIFIED;
+                        bus->change_to[bus->message.local_core_id] = MODIFIED;
                     }
                     else if(state_in_remote_cache == MODIFIED) {
-                        bus->message.operation = BusOperation::WRITE_THEN_READ;
+                        bus->message.operation = WRITE_THEN_READ;
                         bus->when_free = cycle_count + 200;
                         bus->message.set_remote = cycle_count + 100;
                         bus->message.remote_core_id = i;
                         bus->change_state[i] = true;
-                        bus->change_to[i] = State::INVALID;
+                        bus->change_to[i] = INVALID;
                         bus->change_state[bus->message.local_core_id] = true;
-                        bus->change_to[bus->message.local_core_id] = State::MODIFIED;
+                        bus->change_to[bus->message.local_core_id] = MODIFIED;
                     }
                 }
             }
