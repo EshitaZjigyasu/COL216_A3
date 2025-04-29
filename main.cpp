@@ -4,7 +4,7 @@
 #include <vector>
 #include <sstream>
 
-#include "utils.hpp"
+// #include "utils.hpp"
 #include "processor.hpp"
 using namespace std;
 
@@ -64,16 +64,21 @@ int main(int argc, char* argv[]) {
             cerr << "Error: Could not open file " << trace_files[i] << endl;
             return 1;
         }
+        // cout << "Reading " << trace_files[i] << endl;
         instructions[i] = parse_trace(f);
         f.close();
     }
-
+    cout << "Read all traces" << endl;
     Processor processor = Processor(instructions, no_of_sets, no_of_blocks, block_size);
+    cout << "Processor created" << endl;
 
     while(true) {
-        if (processor.core0->done && processor.core1->done && processor.core2->done && processor.core3->done) {
+        cout << "hi" << endl;
+        if (processor.cores[0].done && processor.cores[1].done && processor.cores[2].done && processor.cores[3].done) {
             break;
         } else {
+            cout << "-------------------------------" << endl;
+            cout << "Cycle: " << cycle_count << endl;
             processor.simulate();
         }
     }
@@ -86,6 +91,7 @@ int main(int argc, char* argv[]) {
 //TODO: count number of reads and writes
 
 vector<Instruction> parse_trace (ifstream& f) {
+    // cout << "im here" << endl;
     vector<Instruction> instructions;
     string line;
 
@@ -119,7 +125,7 @@ vector<Instruction> parse_trace (ifstream& f) {
             continue;
         }
     }
-
+    // cout << "im done" << endl;
     return instructions;
 
     // while(!f.eof()) {

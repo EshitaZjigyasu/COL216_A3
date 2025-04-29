@@ -1,3 +1,6 @@
+#ifndef GLOBALS_HPP
+#define GLOBALS_HPP
+
 enum State {
     MODIFIED,
     EXCLUSIVE,
@@ -5,7 +8,9 @@ enum State {
     INVALID
 };
 
-int cycle_count; 
-int no_of_sets;
-int no_of_blocks;
-int block_size;
+extern int cycle_count; 
+extern int no_of_sets;
+extern int no_of_blocks;
+extern int block_size;
+
+#endif // GLOBALS_HPP

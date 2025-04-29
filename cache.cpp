@@ -1,45 +1,92 @@
 #include <vector>
-#include "globals.hpp"
+#include "cache.hpp"
+#include <iostream>
+using namespace std;
 
-class CacheLine {
-public:
-    int tag;
-    State state;
-    int block_size;
-    int last_access_time;
-    bool evicted;
+// class CacheLine {
+// public:
+//     int tag;
+//     State state;
+//     int block_size;
+//     int last_access_time;
+//     bool evicted;
 
-    CacheLine(int block_size) {
+    CacheLine::CacheLine(int block_size) {
         this->tag = 0;
         this->state = INVALID;
         this->block_size = block_size;
     }
-};
+// };
 
-class Set {
-public:
-    std::vector<CacheLine> lines;
-    int number_of_lines;
+// class Set {
+// public:
+//     std::vector<CacheLine> lines;
+//     int number_of_lines;
     
 
-    Set(int associativity, int block_size) {
+    Set::Set(int associativity, int block_size) {
         for (int i = 0; i < associativity; ++i) {
             lines.push_back(CacheLine(block_size));
         }
         this->number_of_lines = associativity;
+        cout << "Set initialized with " << lines.size() << " lines" << endl;
+    }
+    // Set::Set(int associativity, int block_size)
+    // : number_of_lines(associativity)
+    // {
+    //     lines.reserve(associativity);
+    //     for (int i = 0; i < associativity; ++i) {
+    //         lines.emplace_back(block_size);
+    //     }
+    //     std::cout << "Set initialized with " << lines.size() << " lines\n";
+    // }
+
+    Set::~Set() {
+        cout << "Set destructor called" << endl;
     }
 
-    CacheLine* find_line(int tag) {
+    // Set::Set(Set&& other) noexcept {
+    //     cout << "Set move constructor called" << endl;
+    //     this->lines = std::move(other.lines); // Transfer ownership of the vector
+    //     this->number_of_lines = other.number_of_lines;
+    
+    //     // Reset the source object to a valid state
+    //     other.number_of_lines = 0;
+    // }
+
+    CacheLine* Set::find_line(int tag) {
         // returns pointer to line if found, else returns nullptr
-        for (auto& line : lines) {
-            if (line.tag == tag) {
-                return &line;
+        cout << "Set finding line with tag " << tag << endl;
+        // for (auto& line : lines) {
+        //     cout << "Checking line with tag " << line.tag << endl;
+        //     if (line.tag == tag) {
+        //         cout << "Found line with tag " << tag << endl;
+        //         return &line;
+        //     }
+        // }
+        cout << "Number of lines in set: " << no_of_blocks << endl;
+        cout << "Number of lines in set: " << number_of_lines << endl;
+        // try {
+        //     cout << "helloooo" << endl;
+        //     int n = lines.size();
+        //     cout << "Number of lines: " << n << endl;
+        // } catch (const std::exception& e) {
+        //     cout << "Exception occurred: " << e.what() << endl;
+        // } catch (...) {
+        //     cout << "Unknown exception occurred" << endl;
+        // }
+        for (int i = 0; i < no_of_blocks; i++) {
+            cout << "Checking line with tag " << lines[i].tag << endl;
+            if (lines[i].tag == tag) {
+                cout << "Found line with tag " << tag << endl;
+                return &lines[i];
             }
         }
+        cout << "Line with tag " << tag << " not found" << endl;
         return nullptr;
     }
 
-    CacheLine* line_to_replace() {
+    CacheLine* Set::line_to_replace() {
         int min_time = -1;
         CacheLine* line_to_replace = nullptr;
         for(int i = 0; i < number_of_lines; i++){
@@ -53,32 +100,36 @@ public:
         }
         return line_to_replace;
     }
-};
+// };
 
-class Cache {
-public:
-    std::vector<Set> sets;
-    int number_of_sets;
-    int number_of_lines;
-    int number_of_evictions;
-    int number_of_misses;
-    int block_size;
+// class Cache {
+// public:
+//     std::vector<Set> sets;
+//     int number_of_sets;
+//     int number_of_lines;
+//     int number_of_evictions;
+//     int number_of_misses;
+//     int block_size;
 
-    Cache(int number_of_sets, int associativity, int block_size) {
+    Cache::Cache(int number_of_sets, int associativity, int block_size) {
+        cout << "Cache constructor called" << endl;
         this->number_of_sets = number_of_sets;
         this->number_of_lines = associativity;
         this->block_size = block_size;
 
         for (int i = 0; i < number_of_sets; ++i) {
             sets.push_back(Set(associativity, block_size));
+            // cout << sets.size() << endl;sq   
         }
+        cout << "Cache constructor finished" << endl;
     }
 
-    CacheLine* access(int set_index, int tag, int current_time) {
+    CacheLine* Cache::access(int set_index, int tag, int current_time) {
         // if hit -> returns actual line, with evicted = false
         // if miss -> returns line to replace, with evicted = true
         Set& set = sets[set_index];
         CacheLine* line = set.find_line(tag);
+        cout << "Cache accessing line with tag " << tag << " at set index " << set_index << endl;
         if (line) {
             line->evicted = false;
             line->last_access_time = current_time;
@@ -98,4 +149,4 @@ public:
 
 
 
-};
+// };

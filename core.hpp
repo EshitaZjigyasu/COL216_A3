@@ -12,6 +12,8 @@
 //     */
 
 // }
+#ifndef CORE_HPP
+#define CORE_HPP
 
 #include <vector>
 #include "cache.hpp"
@@ -45,8 +47,8 @@ public:
 
     Core(std::vector<Instruction> trace, Cache* cache);
     void run();
-    State snoop(BusMessage message);
 
     // this function is only called when the current core actually has the particular memory address in its cache (in one of the valid states)
-    void update_state(int tag, int set_index, State state);
 };
+
+#endif // CORE_HPP

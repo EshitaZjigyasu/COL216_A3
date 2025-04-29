@@ -1,3 +1,5 @@
+#include "globals.hpp"
+
 int cycle_count = 0;
 int no_of_sets = 64; 
 int no_of_blocks = 2;

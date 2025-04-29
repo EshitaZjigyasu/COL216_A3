@@ -1,52 +1,64 @@
-#include "core.hpp"
+// #include "core.hpp"
+#include "processor.hpp"
 #include <vector>
+#include <iostream>
 using namespace std;
 
-class Processor {
-public:
-    Core** cores;
-    Cache** caches;
+// class Processor {
+// public:
+    // Core** cores;
+    // Cache** caches;
     // vector<Core> cores;
     // vector<Cache> caches;
-    Bus* bus;
+    // Bus* bus;
     // vector<Core*> unblocked_cores;
 
     //TODO: choose the data structure for cores and caches
 
-    // Processor(vector<Instruction>(&traces)[4], int number_of_sets, int associativity, int block_size) {
-    //     for(int i = 0; i < 4; i++) {
-    //         caches.push_back(Cache(number_of_sets, associativity, block_size));
-    //         cores.push_back(Core(traces[i], &caches[i]));
-    //     }
-    //     this->bus = new Bus();
-    // }
-
-    // ~Processor() {
-    //     delete bus;
-    // }
-
-    Processor(vector<Instruction>(&traces)[4], int number_of_sets, int associativity, int block_size) {
+    Processor::Processor(vector<Instruction>(&traces)[4], int number_of_sets, int associativity, int block_size) {
         for(int i = 0; i < 4; i++) {
-            caches[i] = new Cache(number_of_sets, associativity, block_size);
-            cores[i] = new Core(traces[i], caches[i]);
+            caches.push_back(Cache(number_of_sets, associativity, block_size));
+            cores.push_back(Core(traces[i], &caches[i]));
+            cout << (&caches[i])->block_size << endl;
         }
         this->bus = new Bus();
+        cout << "line size " << caches[0].sets[0].lines.size() << endl;
+        cout << "Processor constructor finished" << endl;
+
     }
 
-    ~Processor() {
-        for (int i = 0; i < 4; i++) {
-            delete caches[i];
-            delete cores[i];
-        }
+    Processor::~Processor() {
         delete bus;
     }
 
-    void simulate() {
+    // Processor::Processor(vector<Instruction>(&traces)[4], int number_of_sets, int associativity, int block_size) {
+    //     cout << "Processor constructor called" << endl;
+    //     for(int i = 0; i < 4; i++) {
+    //         cout << "Creating cache " << i << endl;
+    //         caches[i] = new Cache(number_of_sets, associativity, block_size);
+    //         cout << "Creating core " << i << endl;
+    //         cores[i] = new Core(traces[i], caches[i]);
+    //     }
+    //     this->bus = new Bus();
+    //     cout << "Processor constructor finished" << endl;
+    // }
+
+    // Processor::~Processor() {
+    //     for (int i = 0; i < 4; i++) {
+    //         delete caches[i];
+    //         delete cores[i];
+    //     }
+    //     delete bus;
+    // }
+
+    void Processor::simulate() {
+        cout << "Simulating cycle " << cycle_count << endl;
         cycle_count++;
 
         int evict = 0;
 
         if (!bus->is_free) {
+            cout << "Bus is busy" << endl;
             if(cycle_count == bus->when_free) {
                 // bus is free now
                 // sets the states of the local and snooping caches accordingly 
@@ -54,7 +66,7 @@ public:
                 CacheLine* line_on_bus;
                 for(int i = 0; i < 4; i++) {
                     if(bus->change_state[i]) {
-                        line_on_bus = caches[i]->sets[bus->message.index].find_line(bus->message.tag);
+                        line_on_bus = caches[i].sets[bus->message.index].find_line(bus->message.tag);
                         if(line_on_bus != nullptr) {
                             line_on_bus->state = bus->change_to[i];
                             bus->change_state[i] = false;
@@ -63,24 +75,24 @@ public:
                 }
             }
             if(cycle_count == bus->message.set_local && bus->message.operation == CTOC_THEN_WRITE) {
-                CacheLine* line_on_bus = caches[bus->message.local_core_id]->sets[bus->message.index].find_line(bus->message.tag);
+                CacheLine* line_on_bus = caches[bus->message.local_core_id].sets[bus->message.index].find_line(bus->message.tag);
                 if(line_on_bus != nullptr) {
                     line_on_bus->state = State::SHARED;
                     bus->change_state[bus->message.local_core_id] = false;
                 }
             }
             if(cycle_count == bus->message.set_remote && bus->message.operation == WRITE_THEN_READ) {
-                CacheLine* line_on_bus = caches[bus->message.remote_core_id]->sets[bus->message.index].find_line(bus->message.tag);
+                CacheLine* line_on_bus = caches[bus->message.remote_core_id].sets[bus->message.index].find_line(bus->message.tag);
                 if(line_on_bus != nullptr) {
                     line_on_bus->state = State::INVALID;
                     bus->change_state[bus->message.remote_core_id] = false;
                 }
             }
             if(bus->message.operation == EVICT_THEN_MEMREAD && cycle_count == bus->when_free - 100) {
-                bus->message.operation = MEMREAD;
+                bus->message.operation = BusOperation::MEMREAD;
             }
             if(bus->message.operation == EVICT_THEN_RWITM && cycle_count == bus->when_free - 100) {
-                bus->message.operation = RWITM;
+                bus->message.operation = BusOperation::RWITM;
             }
         }
         // if(bus->message.operation == RWITM) {
@@ -106,94 +118,101 @@ public:
         // }
 
         for(int i = 0; i < 4; i++) {
+            cout << "Core " << i << " is blocked: " << cores[i].is_blocked << endl;
 
-
-            if (cores[i]->is_blocked) {
+            if (cores[i].is_blocked) {
                 // cores[i]->idle_cycles++;
-                if (cores[i]->when_free == -1) {
+                if (cores[i].when_free == -1) {
                     // it is waiting for the bus
                     // TODO: request for bus here, if didn't get bus, then increment idle_cycles
-                    cores[i]->idle_cycles++;
+                    cores[i].idle_cycles++;
                 } else {
                     // it is using the bus
                     // TODO: check what happens during CTOC_THEN_WRITE and WRITE_THEN_READ
-                    if (cycle_count == cores[i]->when_free) {
-                        cores[i]->is_blocked = false;
-                        cores[i]->when_free = -1;
+                    if (cycle_count == cores[i].when_free) {
+                        cores[i].is_blocked = false;
+                        cores[i].when_free = -1;
                     }
                 }
             }
 
-            if (!cores[i]->is_blocked && !cores[i]->done) {
-                cores[i]->run();
-                if(cores[i]->result.done) {
+            if (!cores[i].is_blocked && !cores[i].done) {
+                cout << "Core " << i << " is not blocked" << endl;
+                cores[i].run();
+                cout << "Core " << i << " ran" << endl;
+                if(cores[i].result.done) {
                     // dones means last instruction got finished in last cycle
-                    cores[i]->done = true;
+                    cores[i].done = true;
                 }
                 else{
                     // if miss, then check if writeback is needed
-                    if(!cores[i]->result.hit) {
-                        if (cores[i]->result.state == MODIFIED) {
-                            cores[i]->number_of_writebacks++;
+                    if(!cores[i].result.hit) {
+                        cout << "Core " << i << " has a miss" << endl;
+                        if (cores[i].result.state == MODIFIED) {
+                            cores[i].number_of_writebacks++;
                             evict = 100;
                         }
                     }
 
-                    if(cores[i]->result.is_read && cores[i]->result.hit) {
+                    if(cores[i].result.is_read && cores[i].result.hit) {
+                        cout << "Core " << i << " has a read hit" << endl;
                         //READHIT
                         //no op
                         //takes new instruction in next cycle
                     }
-                    else if(cores[i]->result.is_read && !cores[i]->result.hit) {
+                    else if(cores[i].result.is_read && !cores[i].result.hit) {
                         //READMISS
+                        cout << "Core " << i << " has a read miss" << endl;
                         BusMessage message;
                         if(evict == 0) {
-                            message = BusMessage{MEMREAD, cores[i]->result.set_index, cores[i]->result.tag, i, -1, true, -1, -1};
+                            message = BusMessage{BusOperation::MEMREAD, cores[i].result.set_index, cores[i].result.tag, i, -1, true, -1, -1};
                         } else {
-                            message = BusMessage{EVICT_THEN_MEMREAD, cores[i]->result.set_index, cores[i]->result.tag, i, -1, true, -1, -1};
+                            message = BusMessage{BusOperation::EVICT_THEN_MEMREAD, cores[i].result.set_index, cores[i].result.tag, i, -1, true, -1, -1};
                         }
                         if(this->bus->request_bus(message)) {
-                            cores[i]->is_blocked = true;
-                            cores[i]->when_free = bus->when_free;
+                            cores[i].is_blocked = true;
+                            cores[i].when_free = bus->when_free;
                         }
                         else {
-                            cores[i]->is_blocked = true;
-                            cores[i]->when_free = -1;
+                            cores[i].is_blocked = true;
+                            cores[i].when_free = -1;
                         }
                     }
-                    else if (!cores[i]->result.is_read && cores[i]->result.hit) {
+                    else if (!cores[i].result.is_read && cores[i].result.hit) {
                         //WRITEHIT
-                        if(cores[i]->result.state == EXCLUSIVE) {
-                            cores[i]->result.state = State::MODIFIED;
+                        cout << "Core " << i << " has a write hit" << endl;
+                        if(cores[i].result.state == EXCLUSIVE) {
+                            cores[i].result.state = State::MODIFIED;
                         }
-                        else if(cores[i]->result.state == SHARED) {
-                            cores[i]->result.state = State::MODIFIED;
-                            BusMessage message = BusMessage{INVALIDATE, cores[i]->result.set_index, cores[i]->result.tag, i, -1, false, -1, -1};
+                        else if(cores[i].result.state == SHARED) {
+                            cores[i].result.state = State::MODIFIED;
+                            BusMessage message = BusMessage{BusOperation::INVALIDATE, cores[i].result.set_index, cores[i].result.tag, i, -1, false, -1, -1};
                             if(this->bus->request_bus(message)) {
                                 // cores[i]->is_blocked = true;
-                                cores[i]->is_blocked = false;
+                                cores[i].is_blocked = false;
                             }
                             else {
-                                cores[i]->is_blocked = true;
-                                cores[i]->when_free = -1;
+                                cores[i].is_blocked = true;
+                                cores[i].when_free = -1;
                             }
                         }
                     }
-                    else if (!cores[i]->result.is_read && !cores[i]->result.hit) {
+                    else if (!cores[i].result.is_read && !cores[i].result.hit) {
                         //WRITEMISS
+                        cout << "Core " << i << " has a write miss" << endl;
                         BusMessage message;
                         if(evict == 0) {
-                            message = BusMessage{RWITM, cores[i]->result.set_index, cores[i]->result.tag, i, -1, false, -1, -1};
+                            message = BusMessage{BusOperation::RWITM, cores[i].result.set_index, cores[i].result.tag, i, -1, false, -1, -1};
                         } else {
-                            message = BusMessage{EVICT_THEN_RWITM, cores[i]->result.set_index, cores[i]->result.tag, i, -1, false, -1, -1};
+                            message = BusMessage{BusOperation::EVICT_THEN_RWITM, cores[i].result.set_index, cores[i].result.tag, i, -1, false, -1, -1};
                         }
 
                         if(this->bus->request_bus(message)) {
-                            cores[i]->is_blocked = true;
-                            cores[i]->when_free = bus->when_free;
+                            cores[i].is_blocked = true;
+                            cores[i].when_free = bus->when_free;
                         } else {
-                            cores[i]->is_blocked = true;
-                            cores[i]->when_free = -1;
+                            cores[i].is_blocked = true;
+                            cores[i].when_free = -1;
                         }
                     }
                 }
@@ -202,7 +221,7 @@ public:
 
         for(int i = 0; i < 4; i++) {
             if (bus->message.local_core_id != i) {
-                CacheLine* line = caches[i]->sets[bus->message.index].find_line(bus->message.tag);
+                CacheLine* line = caches[i].sets[bus->message.index].find_line(bus->message.tag);
 
                 State state_in_remote_cache;
                 if (line == nullptr) {
@@ -227,23 +246,23 @@ public:
                 }
                 else if(bus->message.operation == MEMREAD) {
                     if(state_in_remote_cache == EXCLUSIVE) {
-                        bus->message.operation = C_TO_C;
-                        bus->when_free = cycle_count + 2 * caches[0]->block_size;
+                        bus->message.operation = BusOperation::C_TO_C;
+                        bus->when_free = cycle_count + 2 * caches[0].block_size;
                         bus->change_state[i] = true;
                         bus->change_state[bus->message.local_core_id] = true;
                         bus->change_to[i] = State::SHARED;
                         bus->change_to[bus->message.local_core_id] = State::SHARED;
                     }
                     else if(state_in_remote_cache == SHARED) {
-                        bus->message.operation = C_TO_C;
-                        bus->when_free = cycle_count + 2 * caches[0]->block_size;
+                        bus->message.operation = BusOperation::C_TO_C;
+                        bus->when_free = cycle_count + 2 * caches[0].block_size;
                         bus->change_state[bus->message.local_core_id] = true;
                         bus->change_to[bus->message.local_core_id] = State::SHARED;
                     }
                     else if(state_in_remote_cache == MODIFIED) {
-                        bus->message.operation = CTOC_THEN_WRITE;
-                        bus->when_free = cycle_count + 2 * caches[0]->block_size + 100;
-                        bus->message.set_local = cycle_count + 2 * caches[0]->block_size;
+                        bus->message.operation = BusOperation::CTOC_THEN_WRITE;
+                        bus->when_free = cycle_count + 2 * caches[0].block_size + 100;
+                        bus->message.set_local = cycle_count + 2 * caches[0].block_size;
                         bus->message.remote_core_id = i;
                         bus->change_state[i] = true;
                         bus->change_to[i] = State::SHARED;
@@ -274,7 +293,7 @@ public:
                         bus->change_to[bus->message.local_core_id] = State::MODIFIED;
                     }
                     else if(state_in_remote_cache == MODIFIED) {
-                        bus->message.operation = WRITE_THEN_READ;
+                        bus->message.operation = BusOperation::WRITE_THEN_READ;
                         bus->when_free = cycle_count + 200;
                         bus->message.set_remote = cycle_count + 100;
                         bus->message.remote_core_id = i;
@@ -374,4 +393,3 @@ public:
         //     return;
         // }
     }
-};

@@ -16,6 +16,8 @@
 //         // Implement write logic
 //     }
 // }
+#ifndef CACHE_HPP
+#define CACHE_HPP
 
 #include <vector>
 #include "bus.hpp"
@@ -41,6 +43,10 @@ public:
 
     Set(int associativity, int block_size);
 
+    ~Set();
+
+    // Set(Set&& other) noexcept;
+
     CacheLine* find_line(int tag);
 
     CacheLine* line_to_replace();
@@ -52,6 +58,8 @@ public:
     int number_of_sets;
     int number_of_lines;
     int block_size;
+    int number_of_evictions;
+    int number_of_misses;
 
     Cache(int number_of_sets, int associativity, int block_size);
 
@@ -64,3 +72,5 @@ public:
     // }
 
 };
+
+#endif // CACHE_HPP
