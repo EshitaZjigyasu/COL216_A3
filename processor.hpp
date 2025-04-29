@@ -10,8 +10,8 @@ public:
 
     // Core** cores;
     // Cache** caches;
-    vector<Core> cores;
-    vector<Cache> caches;
+    vector<Core*> cores;
+    vector<Cache*> caches;
     Bus* bus;
 
     Processor(vector<Instruction>(&traces)[4], int number_of_sets, int associativity, int block_size);

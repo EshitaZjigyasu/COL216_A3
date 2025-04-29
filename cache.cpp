@@ -26,10 +26,13 @@ using namespace std;
 
     Set::Set(int associativity, int block_size) {
         for (int i = 0; i < associativity; ++i) {
-            lines.push_back(CacheLine(block_size));
+            CacheLine* line = new CacheLine(block_size);
+            lines.push_back(line);
         }
         this->number_of_lines = associativity;
-        cout << "Set initialized with " << lines.size() << " lines" << endl;
+        // cout << "Set initialized with " << lines.size() << " lines" << endl;
+        // std::cout << "Set this pointer: " << this << ", number_of_lines set to " << number_of_lines << std::endl;
+
     }
     // Set::Set(int associativity, int block_size)
     // : number_of_lines(associativity)
@@ -42,7 +45,7 @@ using namespace std;
     // }
 
     Set::~Set() {
-        cout << "Set destructor called" << endl;
+        // cout << "Set destructor called" << endl;
     }
 
     // Set::Set(Set&& other) noexcept {
@@ -64,8 +67,10 @@ using namespace std;
         //         return &line;
         //     }
         // }
-        cout << "Number of lines in set: " << no_of_blocks << endl;
-        cout << "Number of lines in set: " << number_of_lines << endl;
+        // std::cout << "Set this pointer: " << this << ", number_of_lines is " << number_of_lines << std::endl;
+
+        // cout << "Number of lines in set: " << no_of_blocks << endl;
+        // cout << "Number of lines in set: " << number_of_lines << endl;
         // try {
         //     cout << "helloooo" << endl;
         //     int n = lines.size();
@@ -76,10 +81,10 @@ using namespace std;
         //     cout << "Unknown exception occurred" << endl;
         // }
         for (int i = 0; i < no_of_blocks; i++) {
-            cout << "Checking line with tag " << lines[i].tag << endl;
-            if (lines[i].tag == tag) {
-                cout << "Found line with tag " << tag << endl;
-                return &lines[i];
+            // cout << "Checking line with tag " << (*lines[i]).tag << endl;
+            if ((*lines[i]).tag == tag) {
+                // cout << "Found line with tag " << tag << endl;
+                return lines[i];
             }
         }
         cout << "Line with tag " << tag << " not found" << endl;
@@ -90,12 +95,12 @@ using namespace std;
         int min_time = -1;
         CacheLine* line_to_replace = nullptr;
         for(int i = 0; i < number_of_lines; i++){
-            if (lines[i].state == INVALID) {
-                return &lines[i];
+            if ((*lines[i]).state == INVALID) {
+                return lines[i];
             }
-            if (min_time == -1 || lines[i].last_access_time < min_time) {
-                min_time = lines[i].last_access_time;
-                line_to_replace = &lines[i];
+            if (min_time == -1 || (*lines[i]).last_access_time < min_time) {
+                min_time = (*lines[i]).last_access_time;
+                line_to_replace = lines[i];
             }
         }
         return line_to_replace;
@@ -118,7 +123,8 @@ using namespace std;
         this->block_size = block_size;
 
         for (int i = 0; i < number_of_sets; ++i) {
-            sets.push_back(Set(associativity, block_size));
+            Set* sett = new Set(associativity, block_size);
+            sets.push_back(sett);
             // cout << sets.size() << endl;sq   
         }
         cout << "Cache constructor finished" << endl;
@@ -127,16 +133,16 @@ using namespace std;
     CacheLine* Cache::access(int set_index, int tag, int current_time) {
         // if hit -> returns actual line, with evicted = false
         // if miss -> returns line to replace, with evicted = true
-        Set& set = sets[set_index];
-        CacheLine* line = set.find_line(tag);
-        cout << "Cache accessing line with tag " << tag << " at set index " << set_index << endl;
+        Set* set = sets[set_index];
+        CacheLine* line = set->find_line(tag);
+        // cout << "Cache accessing line with tag " << tag << " at set index " << set_index << endl;
         if (line) {
             line->evicted = false;
             line->last_access_time = current_time;
             return line;
         } else {
             this->number_of_misses++;
-            CacheLine* line_to_replace = set.line_to_replace();
+            CacheLine* line_to_replace = set->line_to_replace();
             line_to_replace->evicted = true;
             if (line_to_replace->state != INVALID) {
                 // TODO: check if eviction means writeback / setting invalid / replacing with some other address

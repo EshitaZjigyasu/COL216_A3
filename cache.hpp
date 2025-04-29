@@ -37,7 +37,7 @@ public:
 
 class Set {
 public:
-    std::vector<CacheLine> lines;
+    std::vector<CacheLine*> lines;
     int number_of_lines;
     
 
@@ -54,7 +54,7 @@ public:
 
 class Cache {
 public:
-    std::vector<Set> sets;
+    std::vector<Set*> sets;
     int number_of_sets;
     int number_of_lines;
     int block_size;

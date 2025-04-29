@@ -42,20 +42,20 @@ using namespace std;
         Instruction instr = trace[current_instr++];
         int address = instr.address;
         bool is_read = instr.is_read;
-        cout << "this is me " << block_size << endl; 
+        // cout << "this is me " << block_size << endl; 
         int set_index = (address / block_size) % no_of_sets;
-        cout << "set index is " << set_index << endl;
+        // cout << "set index is " << set_index << endl;
         int tag = address / (block_size * no_of_sets);
-        cout << "tag is " << tag << endl;
-        cout << "address is " << address << endl;
+        // cout << "tag is " << tag << endl;
+        // cout << "address is " << address << endl;
 
         if (current_instr >= trace.size()) {
             this->result.done = true;
             return;
         }
-        cout << "Core " << this << " running instruction: " << (is_read ? "READ" : "WRITE") << " at address " << address << endl;
+        // cout << "Core " << this << " running instruction: " << (is_read ? "READ" : "WRITE") << " at address " << address << endl;
         CacheLine* line = cache->access(set_index, tag, cycle_count);
-        cout << "Core " << this << " accessing cache line with tag " << tag << " at set index " << set_index << endl;
+        // cout << "Core " << this << " accessing cache line with tag " << tag << " at set index " << set_index << endl;
         
         this->result.done = false;
         this->result.set_index = set_index;

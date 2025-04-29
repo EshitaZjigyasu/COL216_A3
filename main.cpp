@@ -69,13 +69,17 @@ int main(int argc, char* argv[]) {
 
     Processor processor = Processor(instructions, no_of_sets, no_of_blocks, block_size);
 
-    while(true) {
-        if (processor.cores[0].done && processor.cores[1].done && processor.cores[2].done && processor.cores[3].done) {
-            break;
-        } else {
-            processor.simulate();
-        }
+    // while(true) {
+    //     if (processor.cores[0]->done && processor.cores[1]->done && processor.cores[2]->done && processor.cores[3]->done) {
+    //         break;
+    //     } else {
+    //         processor.simulate();
+    //     }
+    // }
+    for(int i = 0; i < 102; i++) {
+        processor.simulate();
     }
+    // processor.simulate();
 
     //TODO: print stats
 
