@@ -1,40 +1,30 @@
 #include <vector>
-#include "cache.hpp"
+#include "core.hpp"
+#include <iostream>
+using namespace std;
 
-struct Instruction {
-    bool is_read;
-    int address;
-};
+// class Core {
+// public:
+    // std::vector<Instruction> trace;
+    // int current_instr;
+    // int cycle_count;
+    // int idle_cycles;
+    // bool is_blocked;
+    // int number_of_writebacks;
+    // Cache* cache;
+    // bool done;
+    // int when_free;
+    // RunResult result;
 
-struct RunResult {
-    int set_index;
-    int tag;
-    bool is_read;
-    State state;
-    bool hit;
-    bool done;
-};
-
-class Core {
-public:
-    std::vector<Instruction> trace;
-    int current_instr;
-    int cycle_count;
-    int idle_cycles;
-    bool is_blocked;
-    int number_of_writebacks;
-    Cache* cache;
-    bool done;
-    int when_free;
-    RunResult result;
-
-    Core(std::vector<Instruction> trace, Cache* cache) {
+    Core::Core(std::vector<Instruction> trace, Cache* cache) {
+        cout << "Core constructor called" << endl;
         this->trace = trace;
         this->current_instr = 0;
         this->cycle_count = 0;
         this->idle_cycles = 0;
         this->is_blocked = false;
         this->cache = cache;
+        cout << "hi im hereeeee " << this->cache->block_size << endl;
         this->done = false;
         result = RunResult {
             -1,
@@ -44,23 +34,28 @@ public:
             false,
             false
         };
+        cout << "Core constructor finished" << endl;
     }
 
     //run returns true if cache hit, false if cache miss
-    void run() {
+    void Core::run() {
         Instruction instr = trace[current_instr++];
         int address = instr.address;
         bool is_read = instr.is_read;
-
-        int set_index = (address / cache->block_size) % cache->number_of_sets;
-        int tag = address / (cache->block_size * cache->number_of_sets);
+        cout << "this is me " << block_size << endl; 
+        int set_index = (address / block_size) % no_of_sets;
+        cout << "set index is " << set_index << endl;
+        int tag = address / (block_size * no_of_sets);
+        cout << "tag is " << tag << endl;
+        cout << "address is " << address << endl;
 
         if (current_instr >= trace.size()) {
             this->result.done = true;
             return;
         }
-
+        cout << "Core " << this << " running instruction: " << (is_read ? "READ" : "WRITE") << " at address " << address << endl;
         CacheLine* line = cache->access(set_index, tag, cycle_count);
+        cout << "Core " << this << " accessing cache line with tag " << tag << " at set index " << set_index << endl;
         
         this->result.done = false;
         this->result.set_index = set_index;
@@ -89,4 +84,4 @@ public:
     //     CacheLine* line = cache->access(set_index, tag, cycle_count);
     //     line->state = state;
     // }
-};
+// };

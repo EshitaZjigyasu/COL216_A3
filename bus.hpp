@@ -1,3 +1,6 @@
+#ifndef BUS_HPP
+#define BUS_HPP
+
 #include "globals.hpp"
 
 enum BusOperation {
@@ -30,10 +33,12 @@ public:
     int when_free;
     bool is_free;
 
-    bool change_state[4];
-    State change_to[4];
+    bool change_state[4] = {false, false, false, false};
+    State change_to[4] = {INVALID, INVALID, INVALID, INVALID};
 
     Bus();
 
     bool request_bus(BusMessage message);
 };
+
+#endif // BUS_HPP
