@@ -24,6 +24,13 @@ using namespace std;
         this->idle_cycles = 0;
         this->is_blocked = false;
         this->cache = cache;
+        this->number_of_writebacks = 0;
+        this->number_of_reads = 0;
+        this->number_of_writes = 0;
+        this->total_execution_cycles = 0;
+        this->traffic = 0;
+        this->bus_invalidations = 0;
+        // this->invalidate_message = BusMessage{MEMREAD, -1, -1, -1, -1, false, -1, -1}; // MEMREAD is a dummy value, not used in this case. When set to INVALIDATE, it will be used in the snoop function to check if the line is to be invalidated or not.
         // cout << "hi im hereeeee " << this->cache->block_size << endl;
         this->done = false;
         result.set_index = -1;
@@ -32,6 +39,9 @@ using namespace std;
         result.state = INVALID;
         result.hit = false;
         result.done = false;
+        if(this->trace.size() == 0) {
+            this->done = true;
+        }
         // cout << "Core constructor finished" << endl;
     }
 
@@ -46,6 +56,9 @@ using namespace std;
             if(current_instr < trace.size()) {
                 instr = trace[current_instr++];
             }
+            else if(current_instr == trace.size()) {
+                current_instr++;
+            }
             int address = instr.address;
             bool is_read = instr.is_read;
             
@@ -54,7 +67,7 @@ using namespace std;
 
             if (current_instr > trace.size()) {
                 this->result.done = true;
-                this->total_execution_cycles = cycle_count;
+                this->total_execution_cycles = cycle_count - 1;
                 cout << cycle_count << endl;
                 return;
             }

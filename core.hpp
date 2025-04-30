@@ -45,10 +45,13 @@ public:
     RunResult result;
     int when_free;
     BusMessage bus_message;
+    // BusMessage invalidate_message;
     int number_of_reads;
     int number_of_writes;
     int total_execution_cycles;
     int number_of_writebacks;
+    int traffic;
+    int bus_invalidations;
 
     Core(std::vector<Instruction> trace, Cache* cache);
     void run();

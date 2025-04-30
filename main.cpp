@@ -3,6 +3,7 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <cmath>
 
 #include "utils.hpp"
 #include "processor.hpp"
@@ -28,13 +29,13 @@ int main(int argc, char* argv[]) {
                     name_of_app = argv[i + 1];
                     break;
                 case 's':
-                    no_of_sets = atoi(argv[i + 1]);
+                    no_of_sets = (int)pow(2, atoi(argv[i + 1]));
                     break;
                 case 'E':
                     no_of_blocks = atoi(argv[i + 1]);
                     break;
                 case 'b':
-                    block_size = atoi(argv[i + 1]);
+                    block_size = (int)pow(2, atoi(argv[i + 1]));
                     break;
                 case 'o':
                     name_of_output_file = argv[i + 1];
@@ -77,7 +78,7 @@ int main(int argc, char* argv[]) {
             break;
         } else {
             processor.simulate();
-            // count ++;
+            count ++;
             
             // if(count >= skip) {
             //     count = 0;
@@ -100,13 +101,14 @@ int main(int argc, char* argv[]) {
         cout << "Total cycles: " << processor.cores[i]->total_execution_cycles << endl;
         cout << "Idle cycles: " << processor.cores[i]->idle_cycles << endl;
         cout << "Cache misses: " << processor.caches[i]->number_of_misses << endl;
+        cout << "Miss rate: " << (double)processor.caches[i]->number_of_misses / instructions[i].size() * 100 << "%" << endl;
         cout << "Cache evictions: " << processor.caches[i]->number_of_evictions << endl;
         //TODO: choose one of the following
         cout << "Writebacks cache: " << processor.caches[i]->number_of_writebacks << endl;
         cout << "Writebacks core: " << processor.cores[i]->number_of_writebacks << endl;
         //TODO: bus statistics are per core, not overall. fix it.
-        cout << "Bus invalidations: " << processor.bus->invalidations << endl;
-        cout << "Data traffic: " << processor.bus->bytes_transferred << endl;
+        cout << "Bus invalidations: " << processor.cores[i]->bus_invalidations << endl;
+        cout << "Data traffic: " << processor.cores[i]->traffic << endl;
         cout << endl;
     }
     

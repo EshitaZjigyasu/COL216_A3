@@ -34,7 +34,7 @@ Set::Set(int associativity, int block_size) {
 // }
 
 Set::~Set() {
-    cout << "Set destructor called" << endl;
+    // cout << "Set destructor called" << endl;
     for (int i = 0; i < number_of_lines; ++i) {
         delete lines[i];
     }
@@ -64,7 +64,7 @@ CacheLine* Set::find_line(int tag) {
         // cout << "Checking line with tag " << (*lines[i]).tag << endl;
         CacheLine l = *lines[i];
         int t = l.tag;
-        if (t == tag) {
+        if ((*lines[i]).tag == tag) {
             // cout << "Found line with tag " << tag << endl;
             return lines[i];
         }
@@ -92,6 +92,9 @@ Cache::Cache(int number_of_sets, int associativity, int block_size) {
     this->number_of_sets = number_of_sets;
     this->number_of_lines = associativity;
     this->block_size = block_size;
+    this->number_of_misses = 0;
+    this->number_of_evictions = 0;
+    this->number_of_writebacks = 0;
 
     for (int i = 0; i < number_of_sets; ++i) {
         Set* sett = new Set(associativity, block_size);

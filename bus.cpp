@@ -33,6 +33,7 @@ using namespace std;
                 when_free = cycle_count + 1;
                 this->invalidations++;
             }
+            
             // else if(message.operation == CTOC_THEN_WRITE) {
             //     //TODO
             //     // when_free = cycle_count + 2N + 100;
@@ -48,12 +49,13 @@ using namespace std;
             //     // change to --> INVALID for remote and MODIFIED for local
             // }
             else if(message.operation == EVICT_THEN_MEMREAD || message.operation == EVICT_THEN_RWITM) {
-                when_free = cycle_count + 200;
+                when_free = cycle_count + 201;
                 bytes_transferred += block_size;
             } else {
-                when_free = cycle_count + 100;
+                when_free = cycle_count + 101;
                 bytes_transferred += block_size;
             }
+            // cout << "BUs message: " << message.operation << endl;
             return true;
         }
         return false;

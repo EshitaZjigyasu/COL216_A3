@@ -117,7 +117,7 @@ void Processor::simulate() {
                     cores[i]->is_blocked = true;
                     cores[i]->when_free = bus->when_free;
                 } else {
-                cores[i]->idle_cycles++;
+                    cores[i]->idle_cycles++;
                 }
             } else {
                 // it is using the bus
@@ -126,12 +126,17 @@ void Processor::simulate() {
                     // if(cycle_count == 101){cout << "Core " << i << " is unblocked" << endl;}
                     cores[i]->is_blocked = false;
                     cores[i]->when_free = -1;
-                    if (bus->message.operation == MEMREAD) {
+                    // cout << "bus message: " << bus->message.operation << endl;
+                    if (bus->message.operation == MEMREAD || bus->message.operation == RWITM || bus->message.operation == C_TO_C || bus->message.operation == CTOC_THEN_WRITE || bus->message.operation == WRITE_THEN_READ) {
                         CacheLine* line = cores[i]->result.line; //if memread, then this is the line to which new data is to be written
                         int addr = cores[i]->trace[cores[i]->current_instr].address;
                         int tag = addr / (block_size * no_of_sets);
                         line->tag = tag;
                     }
+                    // CacheLine* line = cores[i]->result.line; //if memread, then this is the line to which new data is to be written
+                    //     int addr = cores[i]->trace[cores[i]->current_instr].address;
+                    //     int tag = addr / (block_size * no_of_sets);
+                    //     line->tag = tag;
                 }
             }
         }
@@ -155,6 +160,7 @@ void Processor::simulate() {
                 cores[i]->done = true;
             }
             else{
+                // cout << "done: " << cores[i]->result.done << endl;
                 // if miss, then check if writeback is needed
                 if(!cores[i]->result.hit) {
                     // cout << "Core " << i << " has a miss" << endl;
@@ -165,14 +171,16 @@ void Processor::simulate() {
                 }
 
                 if(cores[i]->result.is_read && cores[i]->result.hit) {
-                    cout << "Core " << i << " has a read hit at address " << cores[i]->trace[cores[i]->current_instr - 1].address << endl;
+                    // cout << "Core " << i << " has a read hit at address " << cores[i]->trace[cores[i]->current_instr - 1].address << endl;
+                    // cout << "cycle count : " << cycle_count << endl;
                     //READHIT
                     //no op
                     //takes new instruction in next cycle
                 }
                 else if(cores[i]->result.is_read && !cores[i]->result.hit) {
                     //READMISS
-                    cout << "Core " << i << " has a read miss at address " << cores[i]->trace[cores[i]->current_instr - 1].address << endl;
+                    // cout << "Core " << i << " has a read miss at address " << cores[i]->trace[cores[i]->current_instr - 1].address << endl;
+                    // cout << "cycle count : " << cycle_count << endl;
                     BusMessage message;
                     if(evict == 0) {
                         // message = BusMessage{MEMREAD, cores[i]->result.set_index, cores[i]->result.tag, i, -1, true, -1, -1};
@@ -200,17 +208,20 @@ void Processor::simulate() {
                     if(this->bus->request_bus(message)) {
                         cores[i]->is_blocked = true;
                         cores[i]->when_free = bus->when_free;
+                        cores[i]->traffic += block_size;
                     }
                     else {
                         cores[i]->is_blocked = true;
                         cores[i]->when_free = -1;
                         cores[i]->bus_message = message;
                     }
-                    cout << "123456789" << endl;
+                    // cout << "123456789" << endl;
                 }
                 else if (!cores[i]->result.is_read && cores[i]->result.hit) {
                     //WRITEHIT
-                    cout << "Core " << i << " has a write hit at address " << cores[i]->trace[cores[i]->current_instr - 1].address << endl;
+                    
+                    // cout << "current instruction: " << cores[i]->current_instr - 1 << endl;
+                    // cout << "Core " << i << " has a write hit at address " << cores[i]->trace[cores[i]->current_instr - 1].address << endl;
                     if(cores[i]->result.state == EXCLUSIVE) {
                         cores[i]->result.state = MODIFIED;
                     }
@@ -230,17 +241,22 @@ void Processor::simulate() {
                         if(this->bus->request_bus(message)) {
                             // cores[i]->is_blocked = true;
                             cores[i]->is_blocked = false;
+                            cores[i]->bus_invalidations++;
+
                         }
                         else {
                             cores[i]->is_blocked = true;
                             cores[i]->when_free = -1;
                             cores[i]->bus_message = message;
                         }
+                        // cores[i]->bus_invalidations++;
+                        // cores[i]->is_blocked = false;
+                        // cores[i]->invalidate_message = message;
                     }
                 }
                 else if (!cores[i]->result.is_read && !cores[i]->result.hit) {
                     //WRITEMISS
-                    cout << "Core " << i << " has a write miss at address " << cores[i]->trace[cores[i]->current_instr - 1].address << endl;
+                    // cout << "Core " << i << " has a write miss at address " << cores[i]->trace[cores[i]->current_instr - 1].address << endl;
                     BusMessage message;
                     if(evict == 0) {
                         // message = BusMessage{RWITM, cores[i]->result.set_index, cores[i]->result.tag, i, -1, false, -1, -1};
@@ -267,6 +283,7 @@ void Processor::simulate() {
                     if(this->bus->request_bus(message)) {
                         cores[i]->is_blocked = true;
                         cores[i]->when_free = bus->when_free;
+                        cores[i]->traffic += block_size;
                     } else {
                         cores[i]->is_blocked = true;
                         cores[i]->when_free = -1;
@@ -279,6 +296,7 @@ void Processor::simulate() {
     }
 
     for(int i = 0; i < 4; i++) {
+
         if (bus->message.local_core_id != i) {
             CacheLine* line = caches[i]->sets[bus->message.index]->find_line(bus->message.tag);
 
@@ -303,10 +321,11 @@ void Processor::simulate() {
                     bus->change_to[bus->message.local_core_id] = MODIFIED;
                 }
             }
-            else if(bus->message.operation == MEMREAD) {
+            if(bus->message.operation == MEMREAD) {
                 if(state_in_remote_cache == EXCLUSIVE) {
                     bus->message.operation = C_TO_C;
-                    bus->when_free = cycle_count + 2 * caches[0]->block_size;
+                    bus->when_free = cycle_count + 2 * caches[0]->block_size + 1;
+                    cores[bus->message.local_core_id]->when_free = cycle_count + 2 * caches[0]->block_size + 1;
                     bus->change_state[i] = true;
                     bus->change_state[bus->message.local_core_id] = true;
                     bus->change_to[i] = SHARED;
@@ -314,14 +333,16 @@ void Processor::simulate() {
                 }
                 else if(state_in_remote_cache == SHARED) {
                     bus->message.operation = C_TO_C;
-                    bus->when_free = cycle_count + 2 * caches[0]->block_size;
+                    bus->when_free = cycle_count + 2 * caches[0]->block_size + 1;
                     bus->change_state[bus->message.local_core_id] = true;
                     bus->change_to[bus->message.local_core_id] = SHARED;
                 }
                 else if(state_in_remote_cache == MODIFIED) {
                     bus->message.operation = CTOC_THEN_WRITE;
-                    bus->when_free = cycle_count + 2 * caches[0]->block_size + 100;
-                    bus->message.set_local = cycle_count + 2 * caches[0]->block_size;
+                    bus->when_free = cycle_count + 2 * caches[0]->block_size + 101;
+                    cores[bus->message.local_core_id]->when_free = cycle_count + 2 * caches[0]->block_size + 101;
+                    cores[bus->message.local_core_id]->when_free = cycle_count + 2 * caches[0]->block_size + 1;
+                    bus->message.set_local = cycle_count + 2 * caches[0]->block_size + 1;
                     bus->message.remote_core_id = i;
                     bus->change_state[i] = true;
                     bus->change_to[i] = SHARED;
@@ -353,8 +374,9 @@ void Processor::simulate() {
                 }
                 else if(state_in_remote_cache == MODIFIED) {
                     bus->message.operation = WRITE_THEN_READ;
-                    bus->when_free = cycle_count + 200;
-                    bus->message.set_remote = cycle_count + 100;
+                    bus->when_free = cycle_count + 201;
+                    cores[bus->message.local_core_id]->when_free = cycle_count + 201;
+                    bus->message.set_remote = cycle_count + 101;
                     bus->message.remote_core_id = i;
                     bus->change_state[i] = true;
                     bus->change_to[i] = INVALID;
