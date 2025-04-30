@@ -22,6 +22,7 @@ using namespace std;
             change_state[i] = false;
             change_to[i] = INVALID;
         }
+        this->message.state_to_evict = INVALID;
         // cout << "Bus constructor finished" << endl;
     }
 
@@ -49,8 +50,16 @@ using namespace std;
             //     // change to --> INVALID for remote and MODIFIED for local
             // }
             else if(message.operation == EVICT_THEN_MEMREAD || message.operation == EVICT_THEN_RWITM) {
-                when_free = cycle_count + 201;
-                bytes_transferred += block_size;
+                if (message.state_to_evict == MODIFIED) {
+                    when_free = cycle_count + 201;
+                    bytes_transferred += block_size;
+                } else if (message.operation == EVICT_THEN_MEMREAD) {
+                    when_free = cycle_count + 101;
+                    this->message.operation = MEMREAD;
+                } else if (message.operation == EVICT_THEN_RWITM) {
+                    when_free = cycle_count + 101;
+                    this->message.operation = RWITM;
+                }
             } else {
                 when_free = cycle_count + 101;
                 bytes_transferred += block_size;
