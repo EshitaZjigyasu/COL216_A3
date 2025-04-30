@@ -55,8 +55,12 @@ void Processor::simulate() {
             CacheLine* line_on_bus;
 
             if(bus->message.change_local) {
+                // cout << "change local" << endl;
                 line_on_bus = bus->message.local_line;
                 if(line_on_bus != nullptr) {
+                    // cout << "change local to exclusive" << endl;
+                    // cout << "cycle: " << cycle_count << endl;
+
                     line_on_bus->state = bus->message.change_local_to;
                     bus->change_state[bus->message.local_core_id] = false;
                 }
@@ -127,6 +131,7 @@ void Processor::simulate() {
             if (cores[i]->when_free == -1) {
                 // it is waiting for the bus
                 if(this->bus->request_bus(cores[i]->bus_message)) {
+                    cores[i]->traffic += block_size;
                     cores[i]->is_blocked = true;
                     cores[i]->when_free = bus->when_free;
                 } else {
@@ -141,9 +146,10 @@ void Processor::simulate() {
                     cores[i]->when_free = -1;
                     // cout << "bus message: " << bus->message.operation << endl;
                     if (bus->message.operation == MEMREAD || bus->message.operation == RWITM || bus->message.operation == C_TO_C || bus->message.operation == CTOC_THEN_WRITE || bus->message.operation == WRITE_THEN_READ) {
-                        CacheLine* line = cores[i]->result.line; //if memread, then this is the line to which new data is to be written
-                        int addr = cores[i]->trace[cores[i]->current_instr].address;
-                        int tag = addr / (block_size * no_of_sets);
+                        CacheLine* line = bus->message.local_line; //if memread, then this is the line to which new data is to be written
+                        // int addr = cores[i]->trace[cores[i]->current_instr - 1].address;
+                        // int tag = addr / (block_size * no_of_sets);
+                        int tag = bus->message.tag;
                         line->tag = tag;
                     }
                     // CacheLine* line = cores[i]->result.line; //if memread, then this is the line to which new data is to be written
@@ -354,7 +360,9 @@ void Processor::simulate() {
                 }
             }
             if(bus->message.operation == MEMREAD) {
+                // cout << "in mem read remote" << endl;
                 if(state_in_remote_cache == EXCLUSIVE) {
+                    // cout << "state is exclusive" << endl;
                     bus->message.operation = C_TO_C;
                     bus->when_free = cycle_count + 2 * caches[0]->block_size + 1;
                     cores[bus->message.local_core_id]->when_free = cycle_count + 2 * caches[0]->block_size + 1;

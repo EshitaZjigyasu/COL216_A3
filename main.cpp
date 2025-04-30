@@ -20,6 +20,8 @@ int main(int argc, char* argv[]) {
 
     string name_of_app;
     string name_of_output_file;
+    int set_index_bits = 0;
+    int block_bits = 0;
     
     ifstream f;
     for (int i = 1; i < argc; i++) {
@@ -29,12 +31,14 @@ int main(int argc, char* argv[]) {
                     name_of_app = argv[i + 1];
                     break;
                 case 's':
+                    set_index_bits = atoi(argv[i + 1]);
                     no_of_sets = (int)pow(2, atoi(argv[i + 1]));
                     break;
                 case 'E':
                     no_of_blocks = atoi(argv[i + 1]);
                     break;
                 case 'b':
+                    block_bits = atoi(argv[i + 1]);
                     block_size = (int)pow(2, atoi(argv[i + 1]));
                     break;
                 case 'o':
@@ -74,12 +78,17 @@ int main(int argc, char* argv[]) {
     Processor processor = Processor(instructions, no_of_sets, no_of_blocks, block_size);
 
     while(true) {
-        if (processor.cores[0]->done && processor.cores[1]->done && processor.cores[2]->done && processor.cores[3]->done) {
-            break;
+        if (processor.cores[0]->done && processor.cores[1]->done && processor.cores[2]->done && processor.cores[3]->done && processor.bus->is_free) {
+            cout << "All cores done at:" << cycle_count << endl;
+            break; 
         } else {
             processor.simulate();
+            int addr = instructions[0][0].address;
             count ++;
-            
+            int set_index = (addr / block_size) % no_of_sets;
+            int tag = addr / (block_size * no_of_sets);
+            if (cycle_count == 103) {cout << "state: " << processor.cores[0]->cache->sets[set_index]->find_line(tag)->state << endl;}
+
             // if(count >= skip) {
             //     count = 0;
             //     cin >> skip;
@@ -111,7 +120,55 @@ int main(int argc, char* argv[]) {
         cout << "Data traffic: " << processor.cores[i]->traffic << endl;
         cout << endl;
     }
+
+    ofstream output_file(name_of_output_file);
+    if (!output_file.is_open()) {
+        cerr << "Error: Could not open output file " << name_of_output_file << endl;
+        return 1;
+    }
+    output_file << "Simulation Parameters:" << endl;
+    output_file << "Trace Prefix: " << name_of_app << endl;
+    output_file << "Set Index Bits: " << set_index_bits<< endl;
+    output_file << "Associativity: " << no_of_blocks << endl;
+    output_file << "Block Bits: " << block_bits << endl;
+    output_file << "Block Size (Bytes): " << block_size << endl;
+    output_file << "Number of Sets: " << no_of_sets << endl;
+    output_file << "Cache Size (KB per core): " << (no_of_sets * no_of_blocks * block_size) / 1024 << endl;
+    output_file << "MESI Protocol: Enabled" << endl;
+    output_file << "Write Policy: Write-back, Write-allocate" << endl;
+    output_file << "Replacement Policy: LRU" << endl;
+    output_file << "Bus: Central snooping bus" << endl << endl;
+
+    for (int i = 0; i < 4; i++){
+        output_file << "Core " << i << " Statistics:" << endl;
+        output_file << "Total Instructions: " << instructions[i].size() << endl;
+        output_file << "Total Reads: " << processor.cores[i]->number_of_reads << endl;
+        output_file << "Total Writes: " << processor.cores[i]->number_of_writes << endl;
+        output_file << "Total Execution Cycles: " << processor.cores[i]->total_execution_cycles << endl;
+        output_file << "Idle Cycles: " << processor.cores[i]->idle_cycles << endl;
+        output_file << "Cache Misses: " << processor.caches[i]->number_of_misses << endl;
+        // output_file << "Cache Miss Rate: " << (double)processor.caches[i]->number_of_misses / instructions[i].size() * 100 << "%" << endl;
+        if(instructions[i].size() == 0) {
+            output_file << "Cache Miss Rate: " << 0 << "%" << endl;
+        }
+        else {
+            output_file << "Cache Miss Rate: " << (double)processor.caches[i]->number_of_misses / instructions[i].size() * 100 << "%" << endl;
+        }
+        output_file << "Cache Evictions: " << processor.caches[i]->number_of_evictions << endl;
+        //TODO: choose one of the following
+        output_file << "Writebacks: " << processor.caches[i]->number_of_writebacks << endl;
+        // output_file << "Writebacks core: " << processor.cores[i]->number_of_writebacks << endl;
+        //TODO: bus statistics are per core, not overall. fix it.
+        output_file << "Bus Invalidations: " << processor.cores[i]->bus_invalidations << endl;
+        output_file << "Data Traffic (Bytes): " << processor.cores[i]->traffic << endl;
+        output_file << endl;
+    }
     
+    output_file << "Overall Bus Summary:" << endl;
+    output_file << "Total Bus Transactions: " << (processor.bus->bytes_transferred) / block_size << endl;
+    output_file << "Total Bus Traffic (Bytes): " << processor.bus->bytes_transferred << endl;
+
+    output_file.close();
 
 
     return 0;
