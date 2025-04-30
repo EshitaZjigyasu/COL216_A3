@@ -319,6 +319,7 @@ void Processor::simulate() {
                     bus->change_to[i] = INVALID;
                     bus->change_state[bus->message.local_core_id] = true;
                     bus->change_to[bus->message.local_core_id] = MODIFIED;
+                    line->tag = -1;
                 }
             }
             if(bus->message.operation == MEMREAD) {
