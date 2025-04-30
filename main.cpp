@@ -101,24 +101,24 @@ int main(int argc, char* argv[]) {
         // }
         // processor.simulate();
 
-        for (int i = 0; i < 4; i++){
-            cout << "Core " << i << " statistics:" << endl;
-            cout << "Total instructions: " << instructions[i].size() << endl;
-            cout << "Total reads: " << processor.cores[i]->number_of_reads << endl;
-            cout << "Total writes: " << processor.cores[i]->number_of_writes << endl;
-            cout << "Total cycles: " << processor.cores[i]->total_execution_cycles << endl;
-            cout << "Idle cycles: " << processor.cores[i]->idle_cycles << endl;
-            cout << "Cache misses: " << processor.caches[i]->number_of_misses << endl;
-            cout << "Miss rate: " << (double)processor.caches[i]->number_of_misses / instructions[i].size() * 100 << "%" << endl;
-            cout << "Cache evictions: " << processor.caches[i]->number_of_evictions << endl;
-            //TODO: choose one of the following
-            cout << "Writebacks cache: " << processor.caches[i]->number_of_writebacks << endl;
-            cout << "Writebacks core: " << processor.cores[i]->number_of_writebacks << endl;
-            //TODO: bus statistics are per core, not overall. fix it.
-            cout << "Bus invalidations: " << processor.cores[i]->bus_invalidations << endl;
-            cout << "Data traffic: " << processor.cores[i]->traffic << endl;
-            cout << endl;
-        }
+        // for (int i = 0; i < 4; i++){
+        //     cout << "Core " << i << " statistics:" << endl;
+        //     cout << "Total instructions: " << instructions[i].size() << endl;
+        //     cout << "Total reads: " << processor.cores[i]->number_of_reads << endl;
+        //     cout << "Total writes: " << processor.cores[i]->number_of_writes << endl;
+        //     cout << "Total cycles: " << processor.cores[i]->total_execution_cycles << endl;
+        //     cout << "Idle cycles: " << processor.cores[i]->idle_cycles << endl;
+        //     cout << "Cache misses: " << processor.caches[i]->number_of_misses << endl;
+        //     cout << "Miss rate: " << (double)processor.caches[i]->number_of_misses / instructions[i].size() * 100 << "%" << endl;
+        //     cout << "Cache evictions: " << processor.caches[i]->number_of_evictions << endl;
+        //     //TODO: choose one of the following
+        //     cout << "Writebacks cache: " << processor.caches[i]->number_of_writebacks << endl;
+        //     cout << "Writebacks core: " << processor.cores[i]->number_of_writebacks << endl;
+        //     //TODO: bus statistics are per core, not overall. fix it.
+        //     cout << "Bus invalidations: " << processor.cores[i]->bus_invalidations << endl;
+        //     cout << "Data traffic: " << processor.cores[i]->traffic << endl;
+        //     cout << endl;
+        // }
 
         ofstream output_file(name_of_output_file);
         if (!output_file.is_open()) {

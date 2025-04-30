@@ -1,8 +1,8 @@
 # COL216_A3
 
 ## How to use tha makefile
-make --> makes an executable named L1simulate
-make run ARGS="<<args to be given to the executable>> --> to run the executable with the arguments given inside the double quotes
+1. make --> makes an executable named L1simulate
+2. make run ARGS="<<args to be given to the executable>> --> to run the executable with the arguments given inside the double quotes
 
 ## Custom test cases -
 1. cache to cache transfer
