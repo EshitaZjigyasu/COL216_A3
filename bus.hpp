@@ -24,6 +24,9 @@ struct BusMessage {
     int set_local; // used for CTOC_THEN_WRITE, the time at which local needs to be set to S 
     int set_remote; // used for WRITE_THEN_READ, the time at which remove needs to be set to I
     State state_to_evict;
+    CacheLine* local_line;
+    bool change_local;
+    State change_local_to;
 };
 
 class Bus {

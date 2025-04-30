@@ -3,11 +3,11 @@
 #include <iostream>
 using namespace std;
 
-CacheLine::CacheLine(int block_size) {
-    this->tag = 0;
-    this->state = INVALID;
-    this->block_size = block_size;
-}
+// CacheLine::CacheLine(int block_size) {
+//     this->tag = 0;
+//     this->state = INVALID;
+//     this->block_size = block_size;
+// }
 
 // CacheLine::~CacheLine() {
 //     cout << "CacheLine destructor called" << endl;

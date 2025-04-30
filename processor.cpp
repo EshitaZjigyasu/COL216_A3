@@ -53,6 +53,14 @@ void Processor::simulate() {
             // sets the states of the local and snooping caches accordingly 
             bus->is_free = true;
             CacheLine* line_on_bus;
+
+            if(bus->message.change_local) {
+                line_on_bus = bus->message.local_line;
+                if(line_on_bus != nullptr) {
+                    line_on_bus->state = bus->message.change_local_to;
+                    bus->change_state[bus->message.local_core_id] = false;
+                }
+            }
             for(int i = 0; i < 4; i++) {
                 if(bus->change_state[i]) {
                     line_on_bus = caches[i]->sets[bus->message.index]->find_line(bus->message.tag);
@@ -62,6 +70,7 @@ void Processor::simulate() {
                     }
                 }
             }
+            
         }
         if(cycle_count == bus->message.set_local && bus->message.operation == CTOC_THEN_WRITE) {
             CacheLine* line_on_bus = caches[bus->message.local_core_id]->sets[bus->message.index]->find_line(bus->message.tag);
@@ -79,9 +88,13 @@ void Processor::simulate() {
         }
         if(bus->message.operation == EVICT_THEN_MEMREAD && cycle_count == bus->when_free - 100) {
             bus->message.operation = MEMREAD;
+            // bus->change_state[bus->message.local_core_id] = true;
+            // bus->change_to[bus->message.local_core_id] = EXCLUSIVE;
         }
         if(bus->message.operation == EVICT_THEN_RWITM && cycle_count == bus->when_free - 100) {
             bus->message.operation = RWITM;
+            bus->change_state[bus->message.local_core_id] = true;
+            bus->change_to[bus->message.local_core_id] = MODIFIED;
         }
     }
     // if(bus->message.operation == RWITM) {
@@ -192,8 +205,11 @@ void Processor::simulate() {
                         message.is_read = true;
                         message.set_local = -1;
                         message.set_remote = -1;
-                        bus->change_state[i] = true;
+                        bus->change_state[i] = false;
                         bus->change_to[i] = EXCLUSIVE;
+                        message.change_local = true;
+                        message.local_line = cores[i]->result.line; //this is the line to be replaced
+                        message.change_local_to = EXCLUSIVE;
                     } else {
                         // message = BusMessage{EVICT_THEN_MEMREAD, cores[i]->result.set_index, cores[i]->result.tag, i, -1, true, -1, -1};
                         message.operation = EVICT_THEN_MEMREAD;
@@ -204,6 +220,10 @@ void Processor::simulate() {
                         message.is_read = true;
                         message.set_local = -1;
                         message.set_remote = -1;
+                        message.change_local = true;
+                        bus->change_state[i] = false;
+                        message.local_line = cores[i]->result.line; //this is the line to be replaced
+                        message.change_local_to = EXCLUSIVE;
                     }
                     if(this->bus->request_bus(message)) {
                         cores[i]->is_blocked = true;
@@ -223,10 +243,12 @@ void Processor::simulate() {
                     // cout << "current instruction: " << cores[i]->current_instr - 1 << endl;
                     // cout << "Core " << i << " has a write hit at address " << cores[i]->trace[cores[i]->current_instr - 1].address << endl;
                     if(cores[i]->result.state == EXCLUSIVE) {
-                        cores[i]->result.state = MODIFIED;
+                        // cores[i]->result.state = MODIFIED;
+                        cores[i]->result.line->state = MODIFIED;
                     }
                     else if(cores[i]->result.state == SHARED) {
-                        cores[i]->result.state = MODIFIED;
+                        // cores[i]->result.state = MODIFIED;
+                        cores[i]->result.line->state = MODIFIED;
                         BusMessage message;
                         // BusMessage message = BusMessage{INVALIDATE, cores[i]->result.set_index, cores[i]->result.tag, i, -1, false, -1, -1};
                         message.operation = INVALIDATE;
@@ -237,6 +259,7 @@ void Processor::simulate() {
                         message.is_read = false;
                         message.set_local = -1;
                         message.set_remote = -1;
+                        message.local_line = cores[i]->result.line;
                         
                         if(this->bus->request_bus(message)) {
                             // cores[i]->is_blocked = true;
@@ -268,6 +291,11 @@ void Processor::simulate() {
                         message.is_read = false;
                         message.set_local = -1;
                         message.set_remote = -1;
+                        bus->change_state[i] = false;
+                        bus->change_to[i] = MODIFIED;
+                        message.local_line = cores[i]->result.line;
+                        message.change_local = true;
+                        message.change_local_to = MODIFIED;
                     } else {
                         // message = BusMessage{EVICT_THEN_RWITM, cores[i]->result.set_index, cores[i]->result.tag, i, -1, false, -1, -1};
                         message.operation = EVICT_THEN_RWITM;
@@ -278,6 +306,9 @@ void Processor::simulate() {
                         message.is_read = false;
                         message.set_local = -1;
                         message.set_remote = -1;
+                        message.local_line = cores[i]->result.line;
+                        message.change_local = true;
+                        message.change_local_to = MODIFIED;
                     }
 
                     if(this->bus->request_bus(message)) {

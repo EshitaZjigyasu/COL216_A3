@@ -22,19 +22,19 @@
 #include <vector>
 #include "bus.hpp"
 
-class CacheLine {
-public:
-    int tag;
-    int data;
-    State state;
-    bool valid;
-    int block_size;
-    int last_access_time;
-    bool evicted;
+// class CacheLine {
+// public:
+//     int tag;
+//     int data;
+//     State state;
+//     bool valid;
+//     int block_size;
+//     int last_access_time;
+//     bool evicted;
 
-    CacheLine(int block_size);
-    // ~CacheLine();
-};
+//     CacheLine(int block_size);
+//     // ~CacheLine();
+// };
 
 
 
