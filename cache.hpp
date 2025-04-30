@@ -33,7 +33,10 @@ public:
     bool evicted;
 
     CacheLine(int block_size);
+    // ~CacheLine();
 };
+
+
 
 class Set {
 public:
@@ -60,6 +63,7 @@ public:
     int block_size;
     int number_of_evictions;
     int number_of_misses;
+    int number_of_writebacks;
 
     Cache(int number_of_sets, int associativity, int block_size);
 

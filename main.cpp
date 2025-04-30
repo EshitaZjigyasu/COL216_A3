@@ -11,6 +11,8 @@ using namespace std;
 vector<Instruction> parse_trace (ifstream& f);
 
 int main(int argc, char* argv[]) {
+    int skip = 1;
+    int count = 0;
     // while loop in whichfirst we will check the blocked cores, then whcihc cores want to access the bus, and then we will sequentialize the remaining cores and randomize the cores that want to access the bus. will run till all the cores instructions have finished
 
     // output according to flag
@@ -67,21 +69,48 @@ int main(int argc, char* argv[]) {
         f.close();
     }
 
+
     Processor processor = Processor(instructions, no_of_sets, no_of_blocks, block_size);
 
-    // while(true) {
-    //     if (processor.cores[0]->done && processor.cores[1]->done && processor.cores[2]->done && processor.cores[3]->done) {
-    //         break;
-    //     } else {
-    //         processor.simulate();
-    //     }
-    // }
-    for(int i = 0; i < 102; i++) {
-        processor.simulate();
+    while(true) {
+        if (processor.cores[0]->done && processor.cores[1]->done && processor.cores[2]->done && processor.cores[3]->done) {
+            break;
+        } else {
+            processor.simulate();
+            // count ++;
+            
+            // if(count >= skip) {
+            //     count = 0;
+            //     cin >> skip;
+            // }
+            // int foo; cin >> foo;
+        }
     }
+
+    // for(int i = 0; i < 102; i++) {
+    //     processor.simulate();
+    // }
     // processor.simulate();
 
-    //TODO: print stats
+    for (int i = 0; i < 4; i++){
+        cout << "Core " << i << " statistics:" << endl;
+        cout << "Total instructions: " << instructions[i].size() << endl;
+        cout << "Total reads: " << processor.cores[i]->number_of_reads << endl;
+        cout << "Total writes: " << processor.cores[i]->number_of_writes << endl;
+        cout << "Total cycles: " << processor.cores[i]->total_execution_cycles << endl;
+        cout << "Idle cycles: " << processor.cores[i]->idle_cycles << endl;
+        cout << "Cache misses: " << processor.caches[i]->number_of_misses << endl;
+        cout << "Cache evictions: " << processor.caches[i]->number_of_evictions << endl;
+        //TODO: choose one of the following
+        cout << "Writebacks cache: " << processor.caches[i]->number_of_writebacks << endl;
+        cout << "Writebacks core: " << processor.cores[i]->number_of_writebacks << endl;
+        //TODO: bus statistics are per core, not overall. fix it.
+        cout << "Bus invalidations: " << processor.bus->invalidations << endl;
+        cout << "Data traffic: " << processor.bus->bytes_transferred << endl;
+        cout << endl;
+    }
+    
+
 
     return 0;
 }

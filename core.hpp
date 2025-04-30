@@ -30,20 +30,25 @@ struct RunResult {
     State state;
     bool hit;
     bool done;
+    CacheLine* line; // this is the line being written on / evicted
 };
 
 class Core {
 public:
     std::vector<Instruction> trace;
     int current_instr;
-    int cycle_count;
+    // int cycle_count;
     int idle_cycles;
     bool is_blocked;
-    int number_of_writebacks;
     Cache* cache;
     bool done;
     RunResult result;
     int when_free;
+    BusMessage bus_message;
+    int number_of_reads;
+    int number_of_writes;
+    int total_execution_cycles;
+    int number_of_writebacks;
 
     Core(std::vector<Instruction> trace, Cache* cache);
     void run();

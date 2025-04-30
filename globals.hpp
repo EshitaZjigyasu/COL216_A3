@@ -8,7 +8,7 @@ enum State {
     INVALID
 };
 
-extern int cycle_count; 
+extern long long cycle_count; 
 extern int no_of_sets;
 extern int no_of_blocks;
 extern int block_size;

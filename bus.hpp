@@ -33,8 +33,8 @@ public:
     int when_free;
     bool is_free;
 
-    bool change_state[4] = {false, false, false, false};
-    State change_to[4] = {INVALID, INVALID, INVALID, INVALID};
+    bool change_state[4];
+    State change_to[4];
 
     Bus();
 

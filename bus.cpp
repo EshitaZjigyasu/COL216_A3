@@ -14,20 +14,24 @@ using namespace std;
     // State change_to[4] = {INVALID, INVALID, INVALID, INVALID};
 
     Bus::Bus() {
-        cout << "Bus constructor called" << endl;
+        // cout << "Bus constructor called" << endl;
         this->bytes_transferred = 0;
         this->invalidations = 0;
         this->is_free = true;
-        cout << "Bus constructor finished" << endl;
+        for(int i = 0; i < 4; i++) {
+            change_state[i] = false;
+            change_to[i] = INVALID;
+        }
+        // cout << "Bus constructor finished" << endl;
     }
 
     bool Bus::request_bus(BusMessage message) {
         if (is_free) {
             this->message = message;
             is_free = false;
-            bytes_transferred += block_size;
             if(message.operation == INVALIDATE) {
                 when_free = cycle_count + 1;
+                this->invalidations++;
             }
             // else if(message.operation == CTOC_THEN_WRITE) {
             //     //TODO
@@ -45,8 +49,10 @@ using namespace std;
             // }
             else if(message.operation == EVICT_THEN_MEMREAD || message.operation == EVICT_THEN_RWITM) {
                 when_free = cycle_count + 200;
+                bytes_transferred += block_size;
             } else {
                 when_free = cycle_count + 100;
+                bytes_transferred += block_size;
             }
             return true;
         }
