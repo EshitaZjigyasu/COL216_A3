@@ -1,7 +1,9 @@
 .vscode
+.DS_Store
 
 # Prerequisites
 *.d
+*.txt
 
 # Compiled Object files
 *.slo
@@ -34,3 +36,4 @@
 *.app
 
 *.trace
+L1simulate

@@ -68,7 +68,6 @@ using namespace std;
             if (current_instr > trace.size()) {
                 this->result.done = true;
                 this->total_execution_cycles = cycle_count - 1;
-                cout << cycle_count << endl;
                 return;
             }
 
