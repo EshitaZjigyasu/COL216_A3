@@ -266,11 +266,12 @@ void Processor::simulate() {
                         message.set_local = -1;
                         message.set_remote = -1;
                         message.local_line = cores[i]->result.line;
+                        cores[i]->bus_invalidations++;
+
                         
                         if(this->bus->request_bus(message)) {
                             // cores[i]->is_blocked = true;
                             cores[i]->is_blocked = false;
-                            cores[i]->bus_invalidations++;
 
                         }
                         else {
@@ -367,15 +368,19 @@ void Processor::simulate() {
                     bus->when_free = cycle_count + 2 * caches[0]->block_size + 1;
                     cores[bus->message.local_core_id]->when_free = cycle_count + 2 * caches[0]->block_size + 1;
                     bus->change_state[i] = true;
-                    bus->change_state[bus->message.local_core_id] = true;
+                    bus->change_state[bus->message.local_core_id] = false;
                     bus->change_to[i] = SHARED;
                     bus->change_to[bus->message.local_core_id] = SHARED;
+                    bus->message.change_local = true;
+                    bus->message.change_local_to = SHARED;
                 }
                 else if(state_in_remote_cache == SHARED) {
                     bus->message.operation = C_TO_C;
                     bus->when_free = cycle_count + 2 * caches[0]->block_size + 1;
-                    bus->change_state[bus->message.local_core_id] = true;
+                    bus->change_state[bus->message.local_core_id] = false;
                     bus->change_to[bus->message.local_core_id] = SHARED;
+                    bus->message.change_local = true;
+                    bus->message.change_local_to = SHARED;
                 }
                 else if(state_in_remote_cache == MODIFIED) {
                     bus->message.operation = CTOC_THEN_WRITE;
@@ -386,8 +391,10 @@ void Processor::simulate() {
                     bus->message.remote_core_id = i;
                     bus->change_state[i] = true;
                     bus->change_to[i] = SHARED;
-                    bus->change_state[bus->message.local_core_id] = true;
+                    bus->change_state[bus->message.local_core_id] = false;
                     bus->change_to[bus->message.local_core_id] = SHARED;
+                    bus->message.change_local = true;
+                    bus->message.change_local_to = SHARED;
                 } else {}
             }
             else if(bus->message.operation == RWITM) {
@@ -409,8 +416,10 @@ void Processor::simulate() {
                 if(state_in_remote_cache == EXCLUSIVE || state_in_remote_cache == SHARED) {
                     bus->change_state[i] = true;
                     bus->change_to[i] = INVALID;
-                    bus->change_state[bus->message.local_core_id] = true;
+                    bus->change_state[bus->message.local_core_id] = false;
                     bus->change_to[bus->message.local_core_id] = MODIFIED;
+                    bus->message.change_local = true;
+                    bus->message.change_local_to = MODIFIED;
                 }
                 else if(state_in_remote_cache == MODIFIED) {
                     bus->message.operation = WRITE_THEN_READ;
@@ -420,8 +429,10 @@ void Processor::simulate() {
                     bus->message.remote_core_id = i;
                     bus->change_state[i] = true;
                     bus->change_to[i] = INVALID;
-                    bus->change_state[bus->message.local_core_id] = true;
+                    bus->change_state[bus->message.local_core_id] = false;
                     bus->change_to[bus->message.local_core_id] = MODIFIED;
+                    bus->message.change_local = true;
+                    bus->message.change_local_to = MODIFIED;
                 }
             }
         }
