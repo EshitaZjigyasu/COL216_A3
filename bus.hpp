@@ -36,6 +36,7 @@ public:
     BusMessage message;
     int when_free;
     bool is_free;
+    int bus_transactions;
 
     bool change_state[4];
     State change_to[4];

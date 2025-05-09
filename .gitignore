@@ -35,5 +35,5 @@
 *.out
 *.app
 
-*.trace
+# *.trace
 L1simulate

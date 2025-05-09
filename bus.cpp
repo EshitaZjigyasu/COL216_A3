@@ -28,6 +28,7 @@ using namespace std;
 
     bool Bus::request_bus(BusMessage message) {
         if (is_free) {
+            this->bus_transactions++;
             this->message = message;
             is_free = false;
             if(message.operation == INVALIDATE) {

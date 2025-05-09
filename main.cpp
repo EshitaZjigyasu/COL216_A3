@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
         }
         
         output_file << "Overall Bus Summary:" << endl;
-        output_file << "Total Bus Transactions: " << (processor.bus->bytes_transferred) / block_size << endl;
+        output_file << "Total Bus Transactions: " << processor.bus->bus_transactions << endl;
         output_file << "Total Bus Traffic (Bytes): " << processor.bus->bytes_transferred << endl;
 
         output_file.close();
